@@ -1,11 +1,9 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-import 'package:device_info_plus/device_info_plus.dart';
 
 void main() {
   runApp(const MyApp());
@@ -79,6 +77,7 @@ class _FirstWidgetState extends State<FirstWidget> {
     },
       onError: (error) {
         hasAccelerometer = false;
+        print('No accelerometer');
       },
     );
     super.initState();
@@ -172,7 +171,6 @@ class _FirstWidgetState extends State<FirstWidget> {
       if (currentTime.difference(lastUpdateTime).inSeconds >= timeLimit) {
         LatLng currentPosition = calculateAverageLocation(positionPack);
         double speedAvg = calculateAverageList(speedPack);
-        print(positionPack);
         positionPack = [];
         speedPack = [];
 
