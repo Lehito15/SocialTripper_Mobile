@@ -1,9 +1,16 @@
+import 'dart:io';
 import 'dart:math';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:get_thumbnail_video/index.dart';
+import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'camera.dart';
+import 'marker.dart';
+
 
 void main() {
   runApp(const MyApp());
@@ -16,7 +23,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-        title: 'Flutter Demo',
+        title: 'Social Tripper',
         theme: ThemeData(
           // This is the theme of your application.
           //
@@ -50,6 +57,7 @@ class FirstWidget extends StatefulWidget {
 }
 
 class _FirstWidgetState extends State<FirstWidget> {
+  bool _isStartButtonVisible = true;
   String locationMessage = 'Current Location of the User';
   String lat="";
   String long="";
@@ -62,13 +70,15 @@ class _FirstWidgetState extends State<FirstWidget> {
 
   double lastTime = DateTime.now().millisecondsSinceEpoch / 1000.0;
 
-  double speedLimit = 0.5;
+  double speedLimit = 1;
   int distanceLimit = 20;
   int timeLimit = 10;
 
   bool hasAccelerometer = true;
   double velocity = 0.0;
   double highestVelocity = 0.0;
+
+  List<Marker> markers = [];
 
   @override
   void initState() {
@@ -77,7 +87,6 @@ class _FirstWidgetState extends State<FirstWidget> {
     },
       onError: (error) {
         hasAccelerometer = false;
-        print('No accelerometer');
       },
     );
     super.initState();
@@ -88,9 +97,9 @@ class _FirstWidgetState extends State<FirstWidget> {
         event.x * event.x + event.y * event.y + event.z * event.z
     );
 
-    if ((newVelocity - velocity).abs() < 0.1) {
-      return;
-    }
+    // if ((newVelocity - velocity).abs() < 0.1) {
+    //   return;
+    // }
 
     setState(() {
       velocity = newVelocity;
@@ -99,26 +108,8 @@ class _FirstWidgetState extends State<FirstWidget> {
         highestVelocity = velocity;
       }
     });
-    //print(velocity);
+    // print(velocity);
   }
-
-  // Future<void> _checkForAccelerometer() async {
-  //   DeviceInfoPlugin deviceInfo = DeviceInfoPlugin();
-  //   AndroidDeviceInfo androidInfo = await deviceInfo.androidInfo;
-  //
-  //   if (androidInfo.hardware.contains("qcom")) {
-  //     setState(() {
-  //       hasAccelerometer = true;
-  //     });
-  //   } else {
-  //     setState(() {
-  //       hasAccelerometer = false;
-  //       print('xddddddddddddddddd');
-  //     });
-  //   }
-  //
-  //   print("Accelerometer available: $hasAccelerometer");
-  // }
 
   void _incrementCounter() {
     setState(() {
@@ -152,6 +143,31 @@ class _FirstWidgetState extends State<FirstWidget> {
     return await Geolocator.getCurrentPosition();
   }
 
+  Future<void> _openCamera() async {
+    final String? mediaPath = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => CameraPage(),
+      ),
+    );
+
+    if (mediaPath != null) {
+      _addMarker(mediaPath);
+    }
+  }
+
+  Future<Uint8List?> generateThumbnail(String mediaPath) async {
+    if (mediaPath.endsWith('.mp4')) {
+      return await VideoThumbnail.thumbnailData(
+        video: mediaPath,
+        imageFormat: ImageFormat.JPEG,
+        quality: 100,
+      );
+    } else {
+      return File(mediaPath).readAsBytesSync();
+    }
+  }
+
   void _liveLocation() {
     LocationSettings locationSettings = const LocationSettings(
       accuracy: LocationAccuracy.high,
@@ -171,6 +187,8 @@ class _FirstWidgetState extends State<FirstWidget> {
       if (currentTime.difference(lastUpdateTime).inSeconds >= timeLimit) {
         LatLng currentPosition = calculateAverageLocation(positionPack);
         double speedAvg = calculateAverageList(speedPack);
+        print(positionPack);
+        print(speedAvg);
         positionPack = [];
         speedPack = [];
 
@@ -180,9 +198,7 @@ class _FirstWidgetState extends State<FirstWidget> {
           locationMessage = 'Latitude: $lat, Longitude: $long';
         });
 
-        // Sprawdzenie, czy poprzednia pozycja jest dostępna
         if (lastPosition != null) {
-          // Obliczenie odległości między ostatnią a obecną pozycją
           double distance = Geolocator.distanceBetween(
             lastPosition!.latitude,
             lastPosition!.longitude,
@@ -222,15 +238,12 @@ class _FirstWidgetState extends State<FirstWidget> {
       sumLng += coord.longitude;
     }
 
-    // Oblicz średnią szerokość i długość
     double avgLat = sumLat / coordinates.length;
     double avgLng = sumLng / coordinates.length;
 
-    // Zwróć średnią lokalizację jako LatLng
     return LatLng(avgLat, avgLng);
   }
 
-// Funkcja do wygładzania lokalizacji
   LatLng _getSmoothedPosition(LatLng lastPos, LatLng currentPos) {
     double smoothedLat = (lastPos.latitude + currentPos.latitude) / 2;
     double smoothedLong = (lastPos.longitude + currentPos.longitude) / 2;
@@ -250,39 +263,62 @@ class _FirstWidgetState extends State<FirstWidget> {
     return sum / list.length;
   }
 
+  void _addMarker(String? mediaPath) async{
+    Uint8List? thumbnail = await generateThumbnail(mediaPath!);
+    setState(() {
+      if (lat.isNotEmpty && long.isNotEmpty) {
+        markers.add(
+          Marker(
+            alignment: Alignment.topCenter,
+            width: 75.0,
+            height: 70.0,
+            point: LatLng(double.parse(lat), double.parse(long)),
+            child: CustomMarker(mediaPath: mediaPath, thumbnail: thumbnail,),
+          ),
+        );
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.purple,
-        title: Text('MOBBYN'),
-      ),
-      body: Center(
-        child: SingleChildScrollView(
-          child: Column(
-            children: <Widget>[
-              Text(locationMessage, textAlign: TextAlign.center),
-              const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () {
-                  _getCurrentLocation().then((value) {
-                    print('Button pressed! Attempting to get location...');
-                    lat = '${value.latitude}';
-                    long = '${value.longitude}';
-                    setState(() {
-                      locationMessage = 'Latitude: $lat, Longitude: $long';
-                    });
-                    _liveLocation();
-                  });
-                },
-                child: const Text("Get Current Location"),
+        appBar: AppBar(
+          backgroundColor: Colors.purple,
+          title: Text('SOCIAL TRIPPER'),
+        ),
+        body: Column(
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: Column(
+                children: [
+                  Text(locationMessage, textAlign: TextAlign.center),
+                  if (_isStartButtonVisible)
+                    ElevatedButton(
+                      onPressed: () {
+                        _getCurrentLocation().then((value) {
+                          print('Button pressed! Attempting to get location...');
+                          lat = '${value.latitude}';
+                          long = '${value.longitude}';
+                          setState(() {
+                            locationMessage = 'Latitude: $lat, Longitude: $long';
+                            _isStartButtonVisible = false;
+                          });
+                          _liveLocation();
+                        });
+                      },
+                      child: const Text("Start trip"),
+                    ),
+                ],
               ),
-
-              SizedBox(
-                height: 300, // Set the height of the map
+            ),
+            Expanded(
+              child: SizedBox(
+                height: 300,
                 child: FlutterMap(
                   options: MapOptions(
-                    initialCenter: LatLng(51.103, 17.085),
+                    initialCenter: LatLng(50.911, 15.755),
                     initialZoom: 13.0,
                   ),
                   children: [
@@ -290,17 +326,6 @@ class _FirstWidgetState extends State<FirstWidget> {
                       urlTemplate:
                       "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
                       userAgentPackageName: 'com.example.app',
-                    ),
-                    MarkerLayer(
-                      markers: [
-                        if (lat.isNotEmpty && long.isNotEmpty)
-                          Marker(
-                            width: 80.0,
-                            height: 80.0,
-                            point: LatLng(double.parse(lat), double.parse(long)),
-                            child: Icon(Icons.location_pin),
-                          ),
-                      ],
                     ),
                     PolylineLayer(
                       polylines: [
@@ -311,115 +336,129 @@ class _FirstWidgetState extends State<FirstWidget> {
                         ),
                       ],
                     ),
+                    MarkerLayer(
+                      markers: [
+                        if (lat.isNotEmpty && long.isNotEmpty)
+                          Marker(
+                            width: 25.0,
+                            height: 25.0,
+                            point: LatLng(double.parse(lat), double.parse(long)),
+                            child: Icon(
+                              Icons.circle,
+                              color: Colors.lightBlue,
+                              size: 20,
+                            ),
+                          ),
+                      ] + markers,
+                    ),
                   ],
                 ),
               ),
-
-
-              const Text(
-                'You have pushed',
-              ),
-              Text(
-                '$_counter',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ),
-    );
-  }
-}
-
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
-
-  @override
-  State<MyHomePage> createState() => _MyHomePageState();
-}
-
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
-
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
             ),
           ],
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 30.0), // Dodaj odstęp od dołu
+          child: !_isStartButtonVisible
+              ? FloatingActionButton(
+            onPressed: _openCamera,
+            tooltip: 'Add photo or video',
+            child: const Icon(Icons.add),
+          )
+              : null,
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked
     );
   }
 }
+
+
+
+
+// class MyHomePage extends StatefulWidget {
+//   const MyHomePage({super.key, required this.title});
+//
+//   // This widget is the home page of your application. It is stateful, meaning
+//   // that it has a State object (defined below) that contains fields that affect
+//   // how it looks.
+//
+//   // This class is the configuration for the state. It holds the values (in this
+//   // case the title) provided by the parent (in this case the App widget) and
+//   // used by the build method of the State. Fields in a Widget subclass are
+//   // always marked "final".
+//
+//   final String title;
+//
+//   @override
+//   State<MyHomePage> createState() => _MyHomePageState();
+// }
+//
+// class _MyHomePageState extends State<MyHomePage> {
+//   int _counter = 0;
+//
+//   void _incrementCounter() {
+//     setState(() {
+//       // This call to setState tells the Flutter framework that something has
+//       // changed in this State, which causes it to rerun the build method below
+//       // so that the display can reflect the updated values. If we changed
+//       // _counter without calling setState(), then the build method would not be
+//       // called again, and so nothing would appear to happen.
+//       _counter++;
+//     });
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     // This method is rerun every time setState is called, for instance as done
+//     // by the _incrementCounter method above.
+//     //
+//     // The Flutter framework has been optimized to make rerunning build methods
+//     // fast, so that you can just rebuild anything that needs updating rather
+//     // than having to individually change instances of widgets.
+//     return Scaffold(
+//       appBar: AppBar(
+//         // TRY THIS: Try changing the color here to a specific color (to
+//         // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
+//         // change color while the other colors stay the same.
+//         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+//         // Here we take the value from the MyHomePage object that was created by
+//         // the App.build method, and use it to set our appbar title.
+//         title: Text(widget.title),
+//       ),
+//       body: Center(
+//         // Center is a layout widget. It takes a single child and positions it
+//         // in the middle of the parent.
+//         child: Column(
+//           // Column is also a layout widget. It takes a list of children and
+//           // arranges them vertically. By default, it sizes itself to fit its
+//           // children horizontally, and tries to be as tall as its parent.
+//           //
+//           // Column has various properties to control how it sizes itself and
+//           // how it positions its children. Here we use mainAxisAlignment to
+//           // center the children vertically; the main axis here is the vertical
+//           // axis because Columns are vertical (the cross axis would be
+//           // horizontal).
+//           //
+//           // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
+//           // action in the IDE, or press "p" in the console), to see the
+//           // wireframe for each widget.
+//           mainAxisAlignment: MainAxisAlignment.center,
+//           children: <Widget>[
+//             const Text(
+//               'You have pushed',
+//             ),
+//             Text(
+//               '$_counter',
+//               style: Theme.of(context).textTheme.headlineMedium,
+//             ),
+//           ],
+//         ),
+//       ),
+//       floatingActionButton: FloatingActionButton(
+//         onPressed: _incrementCounter,
+//         tooltip: 'Increment',
+//         child: const Icon(Icons.add),
+//       ),
+//     );
+//   }
+// }

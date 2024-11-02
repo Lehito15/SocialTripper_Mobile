@@ -7,6 +7,12 @@
 <key>NSLocationAlwaysUsageDescription</key>
 <string>This app needs access to location when in the background.</string>
 
+    <key>NSCameraUsageDescription</key>
+    <string>Potrzebujemy dostępu do kamery, aby robić zdjęcia</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Potrzebujemy dostępu do mikrofonu, aby nagrywać dźwięk</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Potrzebujemy dostępu do galerii, aby zapisywać zdjęcia</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
