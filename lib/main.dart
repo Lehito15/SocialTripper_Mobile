@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:social_tripper_mobile/pages/page_container.dart';
-import 'package:social_tripper_mobile/pages/trip_interface.dart';
+import 'package:social_tripper_mobile/Pages/page_container.dart';
 
-import 'components/BottomNavigation/bloc/navigation_bloc.dart';
+import 'Components/BottomNavigation/bloc/navigation_bloc.dart';
 
 void main() {
   runApp(const MyApp());

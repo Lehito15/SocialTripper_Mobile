@@ -9,8 +9,8 @@ import 'package:get_thumbnail_video/index.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sensors_plus/sensors_plus.dart';
-import '../components/trip_interface/camera.dart';
-import '../components/trip_interface/marker.dart';
+import '../Components/TripInterface/camera.dart';
+import '../Components/TripInterface/marker.dart';
 
 
 class TripInterface extends StatefulWidget {

@@ -1,0 +1,1 @@
+class WrongMonthNumberException implements Exception {}
