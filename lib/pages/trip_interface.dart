@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -23,8 +24,8 @@ class TripInterface extends StatefulWidget {
 class _TripInterfaceState extends State<TripInterface> {
   bool _isStartButtonVisible = true;
   String locationMessage = 'Current Location of the User';
-  String lat="";
-  String long="";
+  String lat = "";
+  String long = "";
   int _counter = 0;
   List<LatLng> routeCoordinates = [];
   LatLng? lastPosition;
@@ -32,7 +33,9 @@ class _TripInterfaceState extends State<TripInterface> {
   List<double> speedPack = [];
   DateTime lastUpdateTime = DateTime.now();
 
-  double lastTime = DateTime.now().millisecondsSinceEpoch / 1000.0;
+  double lastTime = DateTime
+      .now()
+      .millisecondsSinceEpoch / 1000.0;
 
   double speedLimit = 1;
   int distanceLimit = 20;
@@ -46,16 +49,28 @@ class _TripInterfaceState extends State<TripInterface> {
 
   MapController mapController = MapController();
 
+  StreamSubscription<UserAccelerometerEvent>? _accelerometerSubscription;
+
   @override
   void initState() {
-    userAccelerometerEventStream().listen((UserAccelerometerEvent event) {
-      _onAccelerate(event);
-    },
+    super.initState();
+
+    _accelerometerSubscription = userAccelerometerEventStream().listen(
+          (UserAccelerometerEvent event) {
+        _onAccelerate(event);
+      },
       onError: (error) {
         hasAccelerometer = false;
       },
     );
-    super.initState();
+  }
+
+  @override
+  void dispose() {
+    // Anulowanie subskrypcji, gdy widget jest usuwany z drzewa
+    print("Disposed");
+    _accelerometerSubscription?.cancel();
+    super.dispose();
   }
 
   void _onAccelerate(UserAccelerometerEvent event) {
@@ -67,13 +82,15 @@ class _TripInterfaceState extends State<TripInterface> {
     //   return;
     // }
 
-    setState(() {
-      velocity = newVelocity;
+    if (mounted) { // Sprawdzamy, czy widget jest nadal zamontowany, tzn czy nadal włączony jest interfejs
+      setState(() {
+        velocity = newVelocity;
 
-      if (velocity > highestVelocity) {
-        highestVelocity = velocity;
-      }
-    });
+        if (velocity > highestVelocity) {
+          highestVelocity = velocity;
+        }
+      });
+    }
     // print(velocity);
   }
 
@@ -102,7 +119,8 @@ class _TripInterfaceState extends State<TripInterface> {
 
     if (permission == LocationPermission.deniedForever) {
       print('Permission denied forever');
-      return Future.error('Location permissions are permanently denied, we cannot request permission');
+      return Future.error(
+          'Location permissions are permanently denied, we cannot request permission');
     }
 
     print('Getting current position...');
@@ -139,7 +157,8 @@ class _TripInterfaceState extends State<TripInterface> {
       accuracy: LocationAccuracy.high,
     );
 
-    Geolocator.getPositionStream(locationSettings: locationSettings).listen((Position position) {
+    Geolocator.getPositionStream(locationSettings: locationSettings).listen((
+        Position position) {
       DateTime currentTime = DateTime.now();
       LatLng tempLatLng = LatLng(position.latitude, position.longitude);
       positionPack.add(tempLatLng);
@@ -150,7 +169,9 @@ class _TripInterfaceState extends State<TripInterface> {
       }
       // print(tempLatLng);
       // print(position.speed);
-      if (currentTime.difference(lastUpdateTime).inSeconds >= timeLimit) {
+      if (currentTime
+          .difference(lastUpdateTime)
+          .inSeconds >= timeLimit) {
         LatLng currentPosition = calculateAverageLocation(positionPack);
         double speedAvg = calculateAverageList(speedPack);
         print(positionPack);
@@ -158,11 +179,13 @@ class _TripInterfaceState extends State<TripInterface> {
         positionPack = [];
         speedPack = [];
 
-        setState(() {
-          lat = currentPosition.latitude.toString();
-          long = currentPosition.longitude.toString();
-          locationMessage = 'Latitude: $lat, Longitude: $long';
-        });
+        if (mounted) {
+          setState(() {
+            lat = currentPosition.latitude.toString();
+            long = currentPosition.longitude.toString();
+            locationMessage = 'Latitude: $lat, Longitude: $long';
+          });
+        }
 
         if (lastPosition != null) {
           double distance = Geolocator.distanceBetween(
@@ -171,7 +194,8 @@ class _TripInterfaceState extends State<TripInterface> {
             currentPosition.latitude,
             currentPosition.longitude,
           );
-          if (distance >= distanceLimit && (speedAvg > speedLimit || speedAvg == 0)) {
+          if (distance >= distanceLimit &&
+              (speedAvg > speedLimit || speedAvg == 0)) {
             setState(() {
               lastUpdateTime = currentTime;
               routeCoordinates.add(currentPosition);
@@ -229,7 +253,7 @@ class _TripInterfaceState extends State<TripInterface> {
     return sum / list.length;
   }
 
-  void _addMarker(String? mediaPath) async{
+  void _addMarker(String? mediaPath) async {
     Uint8List? thumbnail = await generateThumbnail(mediaPath!);
     setState(() {
       if (lat.isNotEmpty && long.isNotEmpty) {
@@ -249,35 +273,47 @@ class _TripInterfaceState extends State<TripInterface> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        appBar: AppBar(
-          backgroundColor: Colors.purple,
-          title: Text('SOCIAL TRIPPER'),
-        ),
+        backgroundColor: Color(0xffF0F2F5),
         body: Column(
           children: <Widget>[
             Padding(
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-                  Text(locationMessage, textAlign: TextAlign.center),
+                  debugLocationComponent(locationMessage),
                   if (_isStartButtonVisible)
+                    // wyekstrachowac do komponentow
                     ElevatedButton(
                       onPressed: () {
+                        // takie rzeczy na pewno wyekstrahować do osobnych metod
                         _getCurrentLocation().then((value) {
-                          print('Button pressed! Attempting to get location...');
+                          print(
+                              'Button pressed! Attempting to get location...');
                           lat = '${value.latitude}';
                           long = '${value.longitude}';
                           setState(() {
-                            locationMessage = 'Latitude: $lat, Longitude: $long';
+                            locationMessage =
+                            'Latitude: $lat, Longitude: $long';
                             _isStartButtonVisible = false;
                           });
 
-                          mapController.move(LatLng(value.latitude, value.longitude), 17.0);
+                          mapController.move(LatLng(value.latitude,
+                              value.longitude), 17.0);
 
                           _liveLocation();
                         });
                       },
-                      child: const Text("Start trip"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black,
+                      ),
+                      child: const Text(
+                        "Start trip",
+                        style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xffBDF271)
+                        ),
+                      ),
                     ),
                 ],
               ),
@@ -312,7 +348,8 @@ class _TripInterfaceState extends State<TripInterface> {
                           Marker(
                             width: 25.0,
                             height: 25.0,
-                            point: LatLng(double.parse(lat), double.parse(long)),
+                            point: LatLng(double.parse(lat), double.parse(
+                                long)),
                             child: Icon(
                               Icons.circle,
                               color: Colors.lightBlue,
@@ -340,4 +377,23 @@ class _TripInterfaceState extends State<TripInterface> {
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked
     );
   }
+}
+
+
+Column debugLocationComponent(String locationMessage) {
+  List<String> messages = locationMessage.split(",");
+  TextStyle debugLocationMsgStyle = TextStyle(
+      fontWeight: FontWeight.w500,
+      fontSize: 14
+  );
+  List<Text> uiMessages = [];
+  for (String message in messages) {
+    uiMessages.add(Text(
+      message,
+      style: debugLocationMsgStyle,
+    ));
+  }
+  return Column(
+    children: uiMessages,
+  );
 }

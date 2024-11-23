@@ -1,5 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:social_tripper_mobile/pages/page_container.dart';
 import 'package:social_tripper_mobile/pages/trip_interface.dart';
+
+import 'components/BottomNavigation/bloc/navigation_bloc.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,16 +14,18 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-        title: 'Social Tripper',
-        theme: ThemeData(
-          primarySwatch: Colors.blue,
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-          useMaterial3: true,
+    return MultiBlocProvider(
+      providers: [
+        BlocProvider<NavigationBloc>(
+          create: (context) => NavigationBloc(),
         ),
-        home: const TripInterface()
+      ],
+      child: MaterialApp(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(fontFamily: 'Kanit'),
+        home: PageContainer(),
+      ),
     );
   }
 }
-
 
