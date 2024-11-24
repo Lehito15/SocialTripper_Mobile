@@ -127,6 +127,17 @@ class _TripInterfaceState extends State<TripInterface> {
           'Location permissions are permanently denied, we cannot request permission');
     }
 
+
+    if (Platform.isAndroid) {
+      // Android 12+, there are restrictions on starting a foreground service.
+      //
+      // To restart the service on device reboot or unexpected problem, you need to allow below permission.
+      if (!await FlutterForegroundTask.isIgnoringBatteryOptimizations) {
+        // This function requires `android.permission.REQUEST_IGNORE_BATTERY_OPTIMIZATIONS` permission.
+        await FlutterForegroundTask.requestIgnoreBatteryOptimization();
+      }
+    }
+
     print('Getting current position...');
     return await Geolocator.getCurrentPosition();
   }
@@ -157,16 +168,28 @@ class _TripInterfaceState extends State<TripInterface> {
   }
 
   void startForegroundService() async {
-    await FlutterForegroundTask.startService(
-      notificationTitle: 'Tracking Location',
-      notificationText: 'Your location is being tracked in the background.',
-      callback: startCallback,
-    );
+    try {
+      print("Starting foreground service...");
+      await FlutterForegroundTask.startService(
+        notificationTitle: 'Tracking Location',
+        notificationText: 'Your location is being tracked in the background.',
+        callback: startCallback,
+      );
+      print("Started foreground service");
+    } catch (e) {
+      print("Error starting foreground service: $e");
+    }
   }
 
   @pragma('vm:entry-point')
   void startCallback() {
-    FlutterForegroundTask.setTaskHandler(LocationTask());
+    print("startCallback here");
+    try {
+      FlutterForegroundTask.setTaskHandler(LocationTask());
+      print("LocationTask handler set.");
+    } catch (e) {
+      print("Error setting task handler: $e");
+    }
   }
 
   void _liveLocation() {

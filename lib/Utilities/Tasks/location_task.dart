@@ -1,16 +1,16 @@
 import 'dart:isolate';
+import 'package:flutter/services.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
 class LocationTask extends TaskHandler {
   @override
   Future<void> onStart(DateTime timestamp, TaskStarter? sendPort) async {
-    // Rozpoczęcie zadania
+    print('onStart(starter: ${sendPort?.name})');
   }
 
   @override
   Future<void> onEvent(DateTime timestamp, SendPort? sendPort) async {
     print("Tracking location...");
-    // Pobieranie lokalizacji
   }
 
   @override
@@ -25,7 +25,7 @@ class LocationTask extends TaskHandler {
 
   @override
   void onNotificationPressed() {
-    // Kliknięcie powiadomienia
+    print("notification was pressed");
   }
 
   @override
