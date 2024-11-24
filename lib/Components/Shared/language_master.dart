@@ -7,8 +7,8 @@ Container LanguageMaster() {
       BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 2)
     ]),
     child: SvgPicture.asset(
-      "assets/icons/Flag_of_Poland.svg",
-      height: 15,
+      "assets/flags/pl.svg",
+      width: 25,
     ),
   );
 }

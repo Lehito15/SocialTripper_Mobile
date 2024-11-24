@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import 'bloc/navigation_bloc.dart';
 import 'bloc/navigation_event.dart';
 import 'bloc/navigation_state.dart';
+import 'bottom_nav_item.dart';
 
 
 class CustomBottomNavBar extends StatelessWidget {
@@ -38,7 +38,7 @@ class CustomBottomNavBar extends StatelessWidget {
                   bottomNavItem("Home", "assets/icons/house_filled_black.png", "png", 0 == currentIndex, () {
                     context.read<NavigationBloc>().add(ChangeTabEvent(0));
                   }),
-                  bottomNavItem("Trips", "assets/icons/path_black.svg", "svg", 1 == currentIndex, () {
+                  bottomNavItem("Trips", "assets/icons/trip_icon_black.svg", "svg", 1 == currentIndex, () {
                     context.read<NavigationBloc>().add(ChangeTabEvent(1));
                   }),
                   bottomNavItem("Relations", "assets/icons/relacja.svg", "svg", 2 == currentIndex, () {
@@ -59,50 +59,4 @@ class CustomBottomNavBar extends StatelessWidget {
     );
   }
 
-  // Dodany parametr isActive
-  GestureDetector bottomNavItem(String name, String iconPath, String type, bool isActive, VoidCallback onTap) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          bottomNavIconZone(iconPath, type, isActive),
-          Text(
-            name,
-            style: TextStyle(
-              fontSize: 13,
-              fontWeight: isActive ? FontWeight.w400 : FontWeight.w300,
-              color: Colors.black, // Zmieniamy kolor tekstu na czerwony, jeśli aktywne
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Zmieniamy kolor ikony, jeśli jest aktywna
-  Container bottomNavIconZone(String iconPath, String type, bool isActive) {
-    return Container(
-      width: isActive ? 36 : 34,
-      height: isActive ? 36 : 34,
-      decoration: BoxDecoration(
-        shape: BoxShape.circle,
-        color: isActive ? Colors.black : Colors.transparent, // Zmieniamy kolor tła na czerwony, jeśli aktywne
-        boxShadow: isActive ? [
-          BoxShadow(
-            color: Color(0xffBDF271),
-            blurRadius: 0,
-            spreadRadius: 2
-          )
-        ] : null,
-        border: isActive ? Border.all(color: Color(0xff2F3C1C), width: 2.0) : null
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(7),
-        child: type == "svg"
-            ? SvgPicture.asset(iconPath, color: isActive ? Color(0xffBDF271) : null)
-            : Image.asset(iconPath, color: isActive ? Color(0xffBDF271) : null),
-      ),
-    );
-  }
 }

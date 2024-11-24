@@ -1,6 +1,6 @@
 
-import 'package:social_tripper_mobile/models/Activity/activity_thumbnail.dart';
-import 'package:social_tripper_mobile/models/Language/language_thumbnail.dart';
+import 'package:social_tripper_mobile/Models/Activity/activity_thumbnail.dart';
+import 'package:social_tripper_mobile/Models/Language/language_thumbnail.dart';
 
 class TripMaster {
   String name;
