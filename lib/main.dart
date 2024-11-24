@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_tripper_mobile/Pages/page_container.dart';
 
 import 'Components/BottomNavigation/bloc/navigation_bloc.dart';
+import '../Utilities/Tasks/location_task.dart';
 
-void main() {
+Future<void> main() async {
+  await initService();
   runApp(const MyApp());
 }
 

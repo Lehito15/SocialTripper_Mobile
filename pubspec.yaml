@@ -20,6 +20,7 @@ dependencies:
   camerawesome: 2.1.0
   cupertino_icons: ^1.0.8
   device_info_plus: ^11.1.0
+  flutter_foreground_task: 8.14.0
   flutter_map: ^7.0.2
   get_thumbnail_video: ^0.7.2
   geolocator: ^13.0.1
