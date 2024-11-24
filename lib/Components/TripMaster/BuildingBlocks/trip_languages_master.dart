@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:social_tripper_mobile/Components/Shared/language_master.dart';
 
-Column TripLanguagesMaster() {
+import '../../Shared/limited_elements_row.dart';
+
+Column TripLanguagesMaster({
+  required List<String> languages,
+  int maxElements = 5,
+}) {
   return Column(
     crossAxisAlignment: CrossAxisAlignment.start,
     children: [
@@ -14,16 +18,7 @@ Column TripLanguagesMaster() {
       ),
       Container(
         height: 25,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            LanguageMaster(),
-            LanguageMaster(),
-            LanguageMaster(),
-            LanguageMaster(),
-            LanguageMaster(),
-          ],
-        ),
+        child: LimitedElementsRow(languages, maxElements, "Language"),
       )
     ],
   );

@@ -6,11 +6,15 @@ import 'trip_languages_master.dart';
 Row TripSkillsMaster() {
   return Row(
     children: [
-      Expanded(child: TripActivitiesMaster()),
+      Expanded(child: TripActivitiesMaster(
+        activities: []
+      )),
       SizedBox(
         width: 36,
       ),
-      Expanded(child: TripLanguagesMaster())
+      Expanded(child: TripLanguagesMaster(
+        languages: ["Polish", "Czech", "Polish", "Arabic", "German"]
+      ))
     ],
   );
 }
