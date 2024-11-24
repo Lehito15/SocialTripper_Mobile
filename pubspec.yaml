@@ -49,6 +49,8 @@ flutter:
   assets:
     - assets/logo_animation.riv
     - assets/icons/
+    - assets/MediaFiles/
+    - assets/flags/
 
   fonts:
     - family: Kanit

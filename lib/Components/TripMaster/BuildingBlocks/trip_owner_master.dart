@@ -15,7 +15,7 @@ Row TripOwnerMaster() {
         ),
         child: ClipOval(
           child: Image.asset(
-            "assets/icons/zbigniew.jpg",
+            "assets/MediaFiles/zbigniew.jpg",
             fit: BoxFit.cover,
           ),
         ),

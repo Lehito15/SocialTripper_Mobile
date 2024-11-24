@@ -1,6 +1,12 @@
 class ActivityThumbnail {
   String name;
-  String iconUrl;
+  late String shortcut;
 
-  ActivityThumbnail(this.name, this.iconUrl);
+  ActivityThumbnail(this.name) {
+    _assignShortcut();
+  }
+
+  void _assignShortcut() {
+
+  }
 }

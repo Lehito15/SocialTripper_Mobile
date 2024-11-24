@@ -19,7 +19,7 @@ Widget TripMasterView() {
         children: [
           TripTopBarMaster(location: "Góry himalaje zapraszam"),
           SizedBox(height: 9),
-          TripPhotoMaster(photoURI: "assets/icons/góra.jpg"),
+          TripPhotoMaster(photoURI: "assets/MediaFiles/gora.jpg"),
           SizedBox(height: 9),
           TripDateTitleRow(
             DateTime(2000, 9, 22, 12, 12),
