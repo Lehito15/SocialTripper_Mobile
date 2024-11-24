@@ -3,6 +3,7 @@ import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get_thumbnail_video/index.dart';
@@ -11,6 +12,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../Components/TripInterface/camera.dart';
 import '../Components/TripInterface/marker.dart';
+import '../Utilities/Tasks/location_task.dart';
 
 
 class TripInterface extends StatefulWidget {
@@ -37,8 +39,9 @@ class _TripInterfaceState extends State<TripInterface> {
       .now()
       .millisecondsSinceEpoch / 1000.0;
 
-  double speedLimit = 1;
-  int distanceLimit = 20;
+  double speedLimit = 0.8;
+  int distanceLimit = 25;
+  int maxDistanceLimit = 40;
   int timeLimit = 10;
 
   bool hasAccelerometer = true;
@@ -85,6 +88,7 @@ class _TripInterfaceState extends State<TripInterface> {
     if (mounted) { // Sprawdzamy, czy widget jest nadal zamontowany, tzn czy nadal włączony jest interfejs
       setState(() {
         velocity = newVelocity;
+        speedPack.add(velocity);
 
         if (velocity > highestVelocity) {
           highestVelocity = velocity;
@@ -152,7 +156,21 @@ class _TripInterfaceState extends State<TripInterface> {
     }
   }
 
+  void startForegroundService() async {
+    await FlutterForegroundTask.startService(
+      notificationTitle: 'Tracking Location',
+      notificationText: 'Your location is being tracked in the background.',
+      callback: startCallback,
+    );
+  }
+
+  @pragma('vm:entry-point')
+  void startCallback() {
+    FlutterForegroundTask.setTaskHandler(LocationTask());
+  }
+
   void _liveLocation() {
+    startForegroundService();
     LocationSettings locationSettings = const LocationSettings(
       accuracy: LocationAccuracy.high,
     );
@@ -162,11 +180,9 @@ class _TripInterfaceState extends State<TripInterface> {
       DateTime currentTime = DateTime.now();
       LatLng tempLatLng = LatLng(position.latitude, position.longitude);
       positionPack.add(tempLatLng);
-      if (hasAccelerometer) {
-        speedPack.add(velocity);
-      } else {
-        speedPack.add(position.speed);
-      }
+      // if (!hasAccelerometer) {
+      //   speedPack.add(position.speed);
+      // }
       // print(tempLatLng);
       // print(position.speed);
       if (currentTime
@@ -183,7 +199,8 @@ class _TripInterfaceState extends State<TripInterface> {
           setState(() {
             lat = currentPosition.latitude.toString();
             long = currentPosition.longitude.toString();
-            locationMessage = 'Latitude: $lat, Longitude: $long';
+            //locationMessage = 'Latitude: $lat, Longitude: $long';
+            //locationMessage = 'Counter: $_counter';
           });
         }
 
@@ -194,8 +211,8 @@ class _TripInterfaceState extends State<TripInterface> {
             currentPosition.latitude,
             currentPosition.longitude,
           );
-          if (distance >= distanceLimit &&
-              (speedAvg > speedLimit || speedAvg == 0)) {
+          if ((distance >= distanceLimit && speedAvg > speedLimit) ||
+              distance >= maxDistanceLimit) {
             setState(() {
               lastUpdateTime = currentTime;
               routeCoordinates.add(currentPosition);
@@ -242,7 +259,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
   double calculateAverageList(List<double> list) {
     if (list.isEmpty) {
-      throw ArgumentError('The list of coordinates cannot be empty');
+      return 0;
     }
 
     double sum = 0;
@@ -280,7 +297,7 @@ class _TripInterfaceState extends State<TripInterface> {
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
-                  debugLocationComponent(locationMessage),
+                  //debugLocationComponent(locationMessage),
                   if (_isStartButtonVisible)
                     // wyekstrachowac do komponentow
                     ElevatedButton(
