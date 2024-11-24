@@ -34,6 +34,7 @@ dependencies:
   flutter_svg: ^2.0.15
   flutter_bloc: ^8.1.6
   tuple: ^2.0.0
+  json_annotation: ^4.8.0
 
 
 
@@ -51,6 +52,7 @@ flutter:
     - assets/icons/
     - assets/MediaFiles/
     - assets/flags/
+    - assets/countries/
 
   fonts:
     - family: Kanit
