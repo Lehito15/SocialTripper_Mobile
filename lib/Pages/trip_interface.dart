@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'dart:math';
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
@@ -13,6 +14,8 @@ import 'package:sensors_plus/sensors_plus.dart';
 import '../Components/TripInterface/camera.dart';
 import '../Components/TripInterface/marker.dart';
 import '../Utilities/Tasks/location_task.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:collection/collection.dart';
 
 
 class TripInterface extends StatefulWidget {
@@ -22,9 +25,11 @@ class TripInterface extends StatefulWidget {
   State<TripInterface> createState() => _TripInterfaceState();
 }
 
-
 class _TripInterfaceState extends State<TripInterface> {
-  bool _isStartButtonVisible = true;
+  // @override
+  // bool get wantKeepAlive => true;
+
+  bool isStartButtonVisible = true;
   String locationMessage = 'Current Location of the User';
   String lat = "";
   String long = "";
@@ -57,7 +62,13 @@ class _TripInterfaceState extends State<TripInterface> {
   @override
   void initState() {
     super.initState();
-
+    // FlutterForegroundTask.isRunningService.then((isRunning) {
+    //   if (isRunning) {
+    //     _liveLocation();
+    //   }
+    // });
+    loadState();
+    if (!isStartButtonVisible) _liveLocation();
     _accelerometerSubscription = userAccelerometerEventStream().listen(
           (UserAccelerometerEvent event) {
         _onAccelerate(event);
@@ -68,9 +79,70 @@ class _TripInterfaceState extends State<TripInterface> {
     );
   }
 
+  Future<void> saveState() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Zapisanie widoczności przycisku
+    await prefs.setBool('isStartButtonVisible', isStartButtonVisible);
+    await prefs.setString('lat', lat);
+    await prefs.setString('long', long);
+
+    // Zapisanie koordynatów trasy jako JSON
+    final routeCoords = routeCoordinates
+        .map((coord) => {'lat': coord.latitude, 'lng': coord.longitude})
+        .toList();
+    await prefs.setString('routeCoordinates', jsonEncode(routeCoords));
+
+    // Zapisanie ścieżek multimediów
+    final mediaPaths = markers
+        .map((marker) => marker.child) // Pobierz dziecko Marker
+        .whereType<CustomMarker>() // Filtruj tylko CustomMarker
+        .map((customMarker) => customMarker.mediaPath) // Pobierz mediaPath
+        .toList();
+    await prefs.setStringList('mediaPaths', mediaPaths);
+
+    final markerLocations = markers.map((marker) {
+      return {'lat': marker.point.latitude, 'lng': marker.point.longitude};
+    }).toList();
+    await prefs.setString('markerLocations', jsonEncode(markerLocations));
+  }
+
+  Future<void> loadState() async {
+    final prefs = await SharedPreferences.getInstance();
+
+    // Odczyt widoczności przycisku
+    isStartButtonVisible = prefs.getBool('isStartButtonVisible') ?? true;
+    lat = prefs.getString('lat') ?? "";
+    long = prefs.getString('long') ?? "";
+
+    mapController.move(LatLng(double.parse(lat), double.parse(long)), 17.0);
+
+    // Odczyt koordynatów trasy
+    final routeCoordsString = prefs.getString('routeCoordinates');
+    if (routeCoordsString != null) {
+      final routeCoords = jsonDecode(routeCoordsString) as List<dynamic>;
+      routeCoordinates = routeCoords
+          .map((coord) => LatLng(coord['lat'], coord['lng']))
+          .toList();
+    }
+    final markerLocationsString = prefs.getString('markerLocations');
+    List<LatLng> markerLocations = [];
+    if (markerLocationsString != null) {
+      final locations = jsonDecode(markerLocationsString) as List<dynamic>;
+      markerLocations = locations
+          .map((loc) => LatLng(loc['lat'], loc['lng']))
+          .toList();
+    }
+    final mediaPaths = prefs.getStringList('mediaPaths') ?? [];
+    for (final pair in IterableZip([mediaPaths, markerLocations])) {
+      _addMarker(pair[0] as String, pair[1] as LatLng);
+    }
+  }
+
   @override
   void dispose() {
     // Anulowanie subskrypcji, gdy widget jest usuwany z drzewa
+    saveState();
     print("Disposed");
     _accelerometerSubscription?.cancel();
     super.dispose();
@@ -151,19 +223,8 @@ class _TripInterfaceState extends State<TripInterface> {
     );
 
     if (mediaPath != null) {
-      _addMarker(mediaPath);
-    }
-  }
-
-  Future<Uint8List?> generateThumbnail(String mediaPath) async {
-    if (mediaPath.endsWith('.mp4')) {
-      return await VideoThumbnail.thumbnailData(
-        video: mediaPath,
-        imageFormat: ImageFormat.JPEG,
-        quality: 100,
-      );
-    } else {
-      return File(mediaPath).readAsBytesSync();
+      _addMarker(mediaPath, LatLng(double.parse(lat), double.parse(long)));
+      saveState();
     }
   }
 
@@ -213,19 +274,30 @@ class _TripInterfaceState extends State<TripInterface> {
           .inSeconds >= timeLimit) {
         LatLng currentPosition = calculateAverageLocation(positionPack);
         double speedAvg = calculateAverageList(speedPack);
+        print(currentTime
+            .difference(lastUpdateTime)
+            .inSeconds);
         print(positionPack);
         print(speedAvg);
         positionPack = [];
         speedPack = [];
+        lastUpdateTime = currentTime;
 
-        if (mounted) {
-          setState(() {
-            lat = currentPosition.latitude.toString();
-            long = currentPosition.longitude.toString();
-            //locationMessage = 'Latitude: $lat, Longitude: $long';
-            //locationMessage = 'Counter: $_counter';
-          });
-        }
+        // if (mounted) {
+        //   setState(() {
+        //     lat = currentPosition.latitude.toString();
+        //     long = currentPosition.longitude.toString();
+        //     //locationMessage = 'Latitude: $lat, Longitude: $long';
+        //     //locationMessage = 'Counter: $_counter';
+        //   });
+        // }
+
+        setState(() {
+          lat = currentPosition.latitude.toString();
+          long = currentPosition.longitude.toString();
+          //locationMessage = 'Latitude: $lat, Longitude: $long';
+          //locationMessage = 'Counter: $_counter';
+        });
 
         if (lastPosition != null) {
           double distance = Geolocator.distanceBetween(
@@ -237,19 +309,17 @@ class _TripInterfaceState extends State<TripInterface> {
           if ((distance >= distanceLimit && speedAvg > speedLimit) ||
               distance >= maxDistanceLimit) {
             setState(() {
-              lastUpdateTime = currentTime;
               routeCoordinates.add(currentPosition);
               lastPosition = currentPosition;
             });
-          } else {
-            lastUpdateTime = currentTime;
+            saveState();
           }
-        } else {
+        } else if (routeCoordinates == []) {
           setState(() {
-            lastUpdateTime = currentTime;
             routeCoordinates.add(currentPosition);
             lastPosition = currentPosition;
           });
+          saveState();
         }
       }
     });
@@ -293,35 +363,47 @@ class _TripInterfaceState extends State<TripInterface> {
     return sum / list.length;
   }
 
-  void _addMarker(String? mediaPath) async {
-    Uint8List? thumbnail = await generateThumbnail(mediaPath!);
+  void _addMarker(String mediaPath, LatLng coordinates) async {
+    Uint8List? thumbnail = await generateThumbnail(mediaPath);
     setState(() {
-      if (lat.isNotEmpty && long.isNotEmpty) {
-        markers.add(
-          Marker(
-            alignment: Alignment.topCenter,
-            width: 75.0,
-            height: 70.0,
-            point: LatLng(double.parse(lat), double.parse(long)),
-            child: CustomMarker(mediaPath: mediaPath, thumbnail: thumbnail,),
-          ),
-        );
+      markers.add(
+        Marker(
+          alignment: Alignment.topCenter,
+          width: 75.0,
+          height: 70.0,
+          point: coordinates,
+          child: CustomMarker(mediaPath: mediaPath, thumbnail: thumbnail,),
+        ),
+      );
       }
-    });
+    );
+  }
+
+  Future<Uint8List?> generateThumbnail(String mediaPath) async {
+    if (mediaPath.endsWith('.mp4')) {
+      return await VideoThumbnail.thumbnailData(
+        video: mediaPath,
+        imageFormat: ImageFormat.JPEG,
+        quality: 100,
+      );
+    } else {
+      return File(mediaPath).readAsBytesSync();
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    // super.build(context);
     return Scaffold(
         backgroundColor: Color(0xffF0F2F5),
         body: Column(
           children: <Widget>[
             Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(0.0),
               child: Column(
                 children: [
                   //debugLocationComponent(locationMessage),
-                  if (_isStartButtonVisible)
+                  if (isStartButtonVisible)
                     // wyekstrachowac do komponentow
                     ElevatedButton(
                       onPressed: () {
@@ -334,12 +416,12 @@ class _TripInterfaceState extends State<TripInterface> {
                           setState(() {
                             locationMessage =
                             'Latitude: $lat, Longitude: $long';
-                            _isStartButtonVisible = false;
+                            isStartButtonVisible = false;
                           });
 
                           mapController.move(LatLng(value.latitude,
                               value.longitude), 17.0);
-
+                          saveState();
                           _liveLocation();
                         });
                       },
@@ -355,6 +437,27 @@ class _TripInterfaceState extends State<TripInterface> {
                         ),
                       ),
                     ),
+                  if (!isStartButtonVisible)
+                  ElevatedButton(
+                    onPressed: () {
+                      startForegroundService();
+                      isStartButtonVisible = true;
+                      routeCoordinates = [];
+                      markers = [];
+                      saveState();
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                    ),
+                    child: const Text(
+                      "End trip",
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xffBDF271)
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -406,7 +509,7 @@ class _TripInterfaceState extends State<TripInterface> {
         ),
         floatingActionButton: Padding(
           padding: const EdgeInsets.only(bottom: 30.0), // Dodaj odstęp od dołu
-          child: !_isStartButtonVisible
+          child: !isStartButtonVisible
               ? FloatingActionButton(
             onPressed: _openCamera,
             tooltip: 'Add photo or video',
