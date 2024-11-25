@@ -1,19 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
-Row TripMembers() {
+Row TripMembers({
+  required currentMembers,
+  required maxMembers,
+  double iconRadius = 20,
+  double fontSize = 12,
+  double spacing = 5
+}) {
   return Row(
     children: [
       Text(
-        "4/15",
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+        "$currentMembers/$maxMembers",
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: fontSize),
       ),
       SizedBox(
-        width: 5,
+        width: spacing,
       ),
       Container(
-        width: 20,
-        height: 20,
+        width: iconRadius,
+        height: iconRadius,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
         ),

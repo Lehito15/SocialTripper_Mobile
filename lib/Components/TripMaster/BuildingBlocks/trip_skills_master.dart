@@ -3,17 +3,24 @@ import 'package:social_tripper_mobile/Components/TripMaster/BuildingBlocks/trip_
 
 import 'trip_languages_master.dart';
 
-Row TripSkillsMaster() {
+Row TripSkillsMaster({
+  required Set<String> activities,
+  required Set<String> languages
+}) {
   return Row(
+    crossAxisAlignment: CrossAxisAlignment.start,
     children: [
       Expanded(child: TripActivitiesMaster(
-        activities: []
+        activities: activities,
+        spacing: 5
       )),
       SizedBox(
         width: 36,
       ),
       Expanded(child: TripLanguagesMaster(
-        languages: ["Polish", "Czech", "Polish", "Arabic", "German"]
+        languages: languages,
+        spacing: 8.5
+
       ))
     ],
   );

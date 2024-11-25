@@ -53,6 +53,7 @@ flutter:
     - assets/MediaFiles/
     - assets/flags/
     - assets/countries/
+    - assets/activities/
 
   fonts:
     - family: Kanit

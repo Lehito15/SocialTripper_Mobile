@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 
-Row TripOwnerMaster() {
+Row TripOwnerMaster({
+  required String nickname,
+  required String profilePictureUrl,
+  double spacing = 5,
+  double pictureRadius = 20,
+  double fontSize = 12,
+}) {
   return Row(
     children: [
       Container(
-        width: 20,
-        height: 20,
+        width: pictureRadius,
+        height: pictureRadius,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
           border: Border.all(
@@ -15,7 +21,7 @@ Row TripOwnerMaster() {
         ),
         child: ClipOval(
           child: Image.asset(
-            "assets/MediaFiles/zbigniew.jpg",
+            profilePictureUrl,
             fit: BoxFit.cover,
           ),
         ),
@@ -24,8 +30,8 @@ Row TripOwnerMaster() {
         width: 5,
       ),
       Text(
-        "Zbigniew Kucharski",
-        style: TextStyle(fontWeight: FontWeight.w600, fontSize: 12),
+        nickname,
+        style: TextStyle(fontWeight: FontWeight.w600, fontSize: fontSize),
       )
     ],
   );

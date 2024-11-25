@@ -1,14 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:social_tripper_mobile/Utilities/Retrievers/retriever.dart';
 
-class IconRetriever {
+
+class IconRetriever implements SvgRetriever {
   static String iconsPath = "assets/icons/";
-
-  static SvgPicture retrieveSvgAsset(String name) {
-    return SvgPicture.asset(iconsPath+name);
-  }
-
-  static Image retrieveImageAsset(String name) {
-    return Image.asset(iconsPath+name);
+  @override
+  SvgPicture retrieve(String name, double width) {
+    return SvgPicture.asset(
+      iconsPath+name,
+      width: width,
+    );
   }
 }

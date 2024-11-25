@@ -1,6 +1,5 @@
 
-import 'package:social_tripper_mobile/Models/Activity/activity_thumbnail.dart';
-import 'package:social_tripper_mobile/Models/Language/language_thumbnail.dart';
+import 'package:social_tripper_mobile/Models/User/trip_owner_master.dart';
 
 class TripMaster {
   String name;
@@ -8,11 +7,12 @@ class TripMaster {
   DateTime startDate;
   DateTime endDate;
   String description;
-  String photoUrl;
+  String photoUri;
   int numberOfParticipants;
   int maxNumberOfParticipants;
-  Set<ActivityThumbnail> activities;
-  Set<LanguageThumbnail> languages;
+  Set<String> activities;
+  Set<String> languages;
+  TripOwnerMasterModel tripOwner;
 
   TripMaster(
       this.name,
@@ -20,9 +20,10 @@ class TripMaster {
       this.startDate,
       this.endDate,
       this.description,
-      this.photoUrl,
+      this.photoUri,
       this.numberOfParticipants,
       this.maxNumberOfParticipants,
       this.activities,
-      this.languages);
+      this.languages,
+      this.tripOwner);
 }

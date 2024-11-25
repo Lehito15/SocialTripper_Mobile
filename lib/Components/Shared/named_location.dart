@@ -22,6 +22,12 @@ Row NamedLocation({
   )
 }) {
   List<Widget> children = [];
+  Text text = Text(
+      location,
+      style: textStyle,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1
+  );
   switch (order) {
     case "icon_left":
       children = [
@@ -33,18 +39,12 @@ Row NamedLocation({
         SizedBox(
           width: distance,
         ),
-        Text(
-            location,
-            style: textStyle
-        ),
+        Expanded(child: text),
       ];
       break;
     default:
       children = [
-        Text(
-            location,
-            style: textStyle
-        ),
+        Expanded(child: text),
         SizedBox(
           width: distance,
         ),

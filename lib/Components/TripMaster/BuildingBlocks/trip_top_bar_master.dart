@@ -15,6 +15,7 @@ Row TripTopBarMaster({
           iconSize: iconsSize
         )
       ),
+      SizedBox(width: 9,),
       Container(
         width: iconsSize.item1,
         height: iconsSize.item2,
