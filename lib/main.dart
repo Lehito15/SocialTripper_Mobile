@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:flutter_native_splash/flutter_native_splash.dart';
+import 'package:rive/rive.dart';
 import 'package:social_tripper_mobile/Pages/page_container.dart';
 import 'package:social_tripper_mobile/Utilities/Converters/language_converter.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/user_generator.dart';
@@ -11,7 +13,6 @@ Future<void> initExamples() async {
   await UserGenerator.fetchRandomUsers(115);
   await LanguageConverter.initialize();
 }
-
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,9 +35,8 @@ class MyApp extends StatelessWidget {
       child: MaterialApp(
         debugShowCheckedModeBanner: false,
         theme: ThemeData(fontFamily: 'Kanit'),
-        home: PageContainer(),
+        home: PageContainer(), // Ustawiamy SplashScreen jako główny ekran
       ),
     );
   }
 }
-
