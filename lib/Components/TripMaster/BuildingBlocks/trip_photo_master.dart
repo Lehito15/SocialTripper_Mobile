@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 
 Row TripPhotoMaster({
@@ -15,25 +16,15 @@ Row TripPhotoMaster({
           child: AspectRatio(
             aspectRatio: aspectRatio,
             child: isNetworkImage
-                ? Image.network(
-              photoURI,
+                ? CachedNetworkImage(
+              imageUrl: photoURI,
+              maxWidthDiskCache: 500,
               fit: fitType,
-              loadingBuilder: (BuildContext context, Widget child, ImageChunkEvent? loadingProgress) {
-                if (loadingProgress == null) {
-                  return child;
-                }
-                return Center(
-                  child: CircularProgressIndicator(
-                    value: loadingProgress.expectedTotalBytes != null
-                        ? loadingProgress.cumulativeBytesLoaded /
-                        (loadingProgress.expectedTotalBytes ?? 1)
-                        : null,
-                  ),
-                );
-              },
-              errorBuilder: (context, error, stackTrace) {
-                return Center(child: Text('Image load failed', style: TextStyle(color: Colors.red)));
-              },
+              placeholder: (context, url) => const SizedBox.shrink(), // Brak placeholdera
+              errorWidget: (context, url, error) => const Center(child: Text('Image load failed', style: TextStyle(color: Colors.red))),
+              fadeInDuration: const Duration(milliseconds: 150), // Płynne wczytywanie
+              fadeOutDuration: const Duration(milliseconds: 150), // Płynne znikanie
+              // Możesz też dodać animację fadeOutDuration, aby animacja znikania była płynna
             )
                 : Image.asset(
               photoURI,

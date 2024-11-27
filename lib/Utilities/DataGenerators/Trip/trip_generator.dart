@@ -1,3 +1,4 @@
+import 'dart:collection';
 import 'dart:math';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -5,7 +6,10 @@ import 'package:http/http.dart' as http;
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Models/User/trip_owner_master.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/Trip/skills_data_source.dart';
+import 'package:social_tripper_mobile/Utilities/DataGenerators/date_generator.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/lorem_ipsum.dart';
+import 'package:social_tripper_mobile/Utilities/DataGenerators/system_entity_photo_generator.dart';
+import 'package:social_tripper_mobile/Utilities/DataGenerators/user_generator.dart';
 import 'package:tuple/tuple.dart';
 
 
@@ -23,11 +27,6 @@ class TripGenerator {
   static List<String> ownerNames = [];
 
 
-  static Future<String> fetchRandomImage() async {
-    final randomUrl = 'https://random.danielpetrica.com/api/random?${DateTime.now().microsecondsSinceEpoch}';
-    return randomUrl;
-  }
-
   static Tuple2<int, int> generateRandomMembersInfo(int max) {
     final Random random = Random();
     int maxMembers = random.nextInt(max) + 1;
@@ -35,53 +34,13 @@ class TripGenerator {
     return Tuple2(currentMembers, maxMembers);
   }
 
-  static DateTime generateRandomDate() {
-    final Random random = Random();
-
-    int year = random.nextInt(10) + 2020;
-
-    int month = random.nextInt(12) + 1;
-
-    int day = random.nextInt(31) + 1;
-
-    int hour = random.nextInt(24);
-
-    int minute = random.nextInt(60);
-
-    return DateTime(year, month, day, hour, minute);
-  }
-
-  static Future<String> _fetchLoremIpsum({int maxLength = 128}) async {
-    try {
-      final response = await http
-          .get(Uri.parse('https://lipsum.com/feed/json'))
-          .timeout(Duration(milliseconds: 500)); // Limit czasu na 0.5 sekundy
-
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        String text = (data['feed']['lipsum'] ?? '').toString();
-
-        // Losowa długość między 1 a maxLength
-        int randomLength = Random().nextInt(maxLength) + 1;
-
-        // Przytnij tekst do losowej długości
-        if (text.length > randomLength) {
-          text = text.substring(0, randomLength);
-        }
-
-        return text;
-      } else {
-        throw Exception('Failed to load Lorem Ipsum');
-      }
-    } catch (e) {
-      print('Błąd w _fetchLoremIpsum: $e');
-      String text = LoremIpsumGenerator.generate(maxLength: maxLength);
-      int randomLength = Random().nextInt(maxLength) + 1;
-      if (text.length > randomLength) {
-        text = text.substring(0, randomLength);
-      }
-      return text;
+  static String _fetchLoremIpsum({int maxLength = 128}) {
+    String text = LoremIpsumGenerator.generate(maxLength: maxLength);
+    int randomLength = Random().nextInt(maxLength) + 1;
+    if (text.length > randomLength) {
+      text = text.substring(0, randomLength);
     }
+    return text;
   }
 
 
@@ -124,15 +83,20 @@ class TripGenerator {
     Random random = Random();
     int amountOfActivities = random.nextInt(7) + 1;
     int amountOfLanguages = random.nextInt(91);
-    String title = await _fetchLoremIpsum();
-    String destination = await _fetchLoremIpsum();
-    String description = await _fetchLoremIpsum(maxLength: 500);
-    DateTime start = generateRandomDate();
-    DateTime end = generateRandomDate();
-    String tripOwnerNickname = await _fetchLoremIpsum(maxLength: 20);
-    print(tripOwnerNickname);
+    String title = _fetchLoremIpsum();
+    String destination = _fetchLoremIpsum();
+    String description = _fetchLoremIpsum(maxLength: 500);
+    DateTime start = DateGenerator.generateRandomDate();
+    DateTime end = DateGenerator.generateRandomDate();
+    String tripOwnerNickname = _fetchLoremIpsum(maxLength: 20);
     Tuple2<int, int> members = generateRandomMembersInfo(1000);
-    String tripPicture = await fetchRandomImage();
+    String tripPicture = await SystemEntityPhotoGenerator.fetchRandomImage();
+    final Map<String, dynamic>? user = UserGenerator.getRandomUser();
+    print(user);
+
+    // Zmienione wywołanie funkcji, z opóźnieniem
+
+    // TripOwnerMasterModel tripOwnerMaster = TripOwnerMasterModel()
     return TripMaster(
         title,
         destination,
@@ -144,7 +108,7 @@ class TripGenerator {
         members.item2,
         Set.from(_randomActivities(amountOfActivities)),
         Set.from(_randomLanguages(amountOfLanguages)),
-        TripOwnerMasterModel(tripOwnerNickname, "assets/MediaFiles/zbigniew.jpg")
+        TripOwnerMasterModel(user?['name'], "assets/MediaFiles/zbigniew.jpg")
     );
   }
 }
