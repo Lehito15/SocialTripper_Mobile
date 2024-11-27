@@ -49,10 +49,10 @@ flutter_launcher_icons:
   android: "launcher_icon"
   ios: true
   remove_alpha_ios: true
-  image_path: "assets/rect5_2_black.png"
+  image_path: "app_system_assets/app_icon_black.png"
   min_sdk_android: 24
   adaptive_icon_background: "#000000"
-  adaptive_icon_foreground: "assets/rect5_2_black.png"
+  adaptive_icon_foreground: "app_system_assets/app_icon_black.png"
 
 
 flutter:
