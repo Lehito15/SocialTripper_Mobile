@@ -41,4 +41,11 @@ class DateConverter {
     String minuteStr = minute.toString().padLeft(2, '0');
     return "$hourStr:$minuteStr";
   }
+
+  static String convertDatetimeToString(DateTime dt) {
+    String day = dt.day.toString().padLeft(2, '0'); // Dodaje wiodące zero, jeśli potrzeba
+    String month = dt.month.toString().padLeft(2, '0'); // Dodaje wiodące zero, jeśli potrzeba
+    String year = dt.year.toString(); // Rok zawsze ma 4 cyfry
+    return "$day/$month/$year";
+  }
 }

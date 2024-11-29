@@ -2,9 +2,12 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:http/http.dart' as http;
 
+import 'date_generator.dart';
+import 'generated_user.dart';
+
 class UserGenerator {
   // Statyczna lista użytkowników, która będzie przechowywać dane pobranych użytkowników
-  static List<Map<String, dynamic>> users = [];
+  static List<GeneratedUser> users = [];
 
   // Adres API, z którego będziemy pobierać dane
   static final String _apiUrl = 'https://randomuser.me/api/';
@@ -17,17 +20,16 @@ class UserGenerator {
       if (response.statusCode == 200) {
         print("Użytkownicy pobrani pomyślnie");
         final data = jsonDecode(response.body);
+        print(data);  // Logowanie całej odpowiedzi z API
 
-        // Przypisanie pobranych użytkowników do listy
-        users = (data['results'] as List).map((user) {
-          return {
-            'name': '${user['name']['first']} ${user['name']['last']}',
-            'email': user['email'],
-            'picture': user['picture']['large'],
-            'username': user['login']['username'],
-            'gender': user['gender'],
-          };
-        }).toList();
+        // Sprawdzenie czy odpowiedź zawiera wszystkie wymagane dane
+        if (data['results'] != null && data['results'].isNotEmpty) {
+          users = (data['results'] as List).map((user) {
+            return GeneratedUser.fromJson(user);
+          }).toList();
+        } else {
+          throw Exception('No users found in the API response');
+        }
       } else {
         throw Exception('Failed to fetch user data');
       }
@@ -35,22 +37,22 @@ class UserGenerator {
       print('Error in fetchRandomUsers: $e');
       // Można dodać domyślnych użytkowników w razie błędu
       users = [
-        {
-          'name': 'John Doe',
-          'email': 'johndoe@example.com',
-          'picture': 'https://via.placeholder.com/150',
-          'username': 'johndoe',
-          'gender': 'unknown',
-        },
+        GeneratedUser(
+          name: 'John Doe',
+          email: 'johndoe@example.com',
+          picture: 'https://via.placeholder.com/150',
+          username: 'johndoe',
+          gender: 'unknown',
+          date: DateGenerator.generateRandomDate(),
+        ),
       ];
-    }
-    finally {
+    } finally {
       print(users.length);
     }
   }
 
   /// Metoda pomocnicza do pobrania konkretnego użytkownika
-  static Map<String, dynamic>? getRandomUser() {
+  static GeneratedUser getRandomUser() {
     if (users.isNotEmpty) {
       // Tworzymy losowy indeks w zakresie od 0 do (users.length - 1)
       Random random = Random();
@@ -58,8 +60,17 @@ class UserGenerator {
 
       // Zwracamy losowego użytkownika
       return users[randomIndex];
+    } else {
+      // Jeśli lista jest pusta, zwracamy domyślnego użytkownika
+      return GeneratedUser(
+        name: 'John Doe',
+        email: 'johndoe@example.com',
+        picture: 'https://via.placeholder.com/150',
+        username: 'johndoe',
+        gender: 'unknown',
+        date: DateGenerator.generateRandomDate(),
+      );
     }
-    return null; // Zwraca null, jeśli lista użytkowników jest pusta
   }
 
   /// Metoda do pobrania liczby użytkowników

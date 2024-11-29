@@ -7,6 +7,7 @@ import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Models/User/trip_owner_master.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/Trip/skills_data_source.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/date_generator.dart';
+import 'package:social_tripper_mobile/Utilities/DataGenerators/generated_user.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/lorem_ipsum.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/system_entity_photo_generator.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/user_generator.dart';
@@ -91,7 +92,7 @@ class TripGenerator {
     String tripOwnerNickname = _fetchLoremIpsum(maxLength: 20);
     Tuple2<int, int> members = generateRandomMembersInfo(1000);
     String tripPicture = await SystemEntityPhotoGenerator.fetchRandomImage();
-    final Map<String, dynamic>? user = UserGenerator.getRandomUser();
+    GeneratedUser? user = UserGenerator.getRandomUser();
     print(user);
 
     // Zmienione wywołanie funkcji, z opóźnieniem
@@ -108,7 +109,7 @@ class TripGenerator {
         members.item2,
         Set.from(_randomActivities(amountOfActivities)),
         Set.from(_randomLanguages(amountOfLanguages)),
-        TripOwnerMasterModel(user?['name'], "assets/MediaFiles/zbigniew.jpg")
+        TripOwnerMasterModel(user.name, user.picture)
     );
   }
 }

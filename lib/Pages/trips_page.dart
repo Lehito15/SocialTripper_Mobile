@@ -50,14 +50,12 @@ class _TripsPageState extends State<TripsPage>
         await precacheImage(imageProvider, context);
 
         // Można również opcjonalnie logować, które zdjęcie zostało załadowane
-        print("Załadowano zdjęcie dla tripu $i");
       }
     }
   }
 
   void scrollToTop() {
     if (_scrollController.offset == 0) {
-      print(TripsPage.refreshIndicatorKey.currentState);
       TripsPage.refreshIndicatorKey.currentState?.show();
     }
 
@@ -154,7 +152,6 @@ class _TripsPageState extends State<TripsPage>
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent * (threshold / 100) &&
         !_isLoading) {
-      print("Threshold reached: $threshold%");
       _loadMoreContent();
     }
   }
@@ -197,7 +194,6 @@ class _TripsPageState extends State<TripsPage>
     }
 
     if (!_memoizedTripWidgets.containsKey(index)) {
-      print("budowa $index");
       _memoizedTripWidgets[index] = TripMasterView(
         trip,
       );

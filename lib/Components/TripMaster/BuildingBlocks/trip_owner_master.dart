@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:social_tripper_mobile/Components/Shared/bordered_user_picture.dart';
 
 Row TripOwnerMaster({
   required String nickname,
@@ -9,23 +10,7 @@ Row TripOwnerMaster({
 }) {
   return Row(
     children: [
-      Container(
-        width: pictureRadius,
-        height: pictureRadius,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: Colors.black,
-            width: 1,
-          ),
-        ),
-        child: ClipOval(
-          child: Image.asset(
-            profilePictureUrl,
-            fit: BoxFit.cover,
-          ),
-        ),
-      ),
+      BorderedUserPicture(radius: pictureRadius, pictureURI: profilePictureUrl),
       SizedBox(
         width: 5,
       ),

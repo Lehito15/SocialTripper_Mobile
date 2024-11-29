@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_tripper_mobile/Components/TopNavigation/appbar.dart';
 import 'package:social_tripper_mobile/Components/TripMaster/trip_master.dart';
+import 'package:social_tripper_mobile/Pages/home_page.dart';
 import 'package:social_tripper_mobile/Pages/trips_page.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/Trip/trip_generator.dart';
 
@@ -19,7 +20,7 @@ class _PageContainerState extends State<PageContainer> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    Center(child: Text("Home Page")), // Placeholder dla stron
+    HomePage(key: HomePage.homePageKey), // Placeholder dla stron
     TripsPage(key: TripsPage.tripsPageKey), // Strona wycieczek z GlobalKey
     Center(child: Text("Relations Page")), // Placeholder
     Center(child: Text("Groups Page")), // Placeholder
@@ -39,6 +40,13 @@ class _PageContainerState extends State<PageContainer> {
               final tripsPageState = TripsPage.tripsPageKey.currentState;
               if (tripsPageState != null) {
                 tripsPageState.scrollToTop();
+              }
+            }
+
+            if (_currentIndex == 0 && _currentIndex == state.currentIndex) {
+              final homePageState = HomePage.homePageKey.currentState;
+              if (homePageState != null) {
+                print("a");
               }
             }
             setState(() {

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
+import 'package:social_tripper_mobile/Components/Shared/entity_options_default.dart';
 import 'package:social_tripper_mobile/Components/Shared/named_location.dart';
 import 'package:tuple/tuple.dart';
 
@@ -16,11 +17,7 @@ Row TripTopBarMaster({
         )
       ),
       SizedBox(width: 9,),
-      Container(
-        width: iconsSize.item1,
-        height: iconsSize.item2,
-        child: SvgPicture.asset("assets/icons/three-dots-svgrepo-com.svg"),
-      )
+      EntityOptionsDefault(),
     ],
   );
 }

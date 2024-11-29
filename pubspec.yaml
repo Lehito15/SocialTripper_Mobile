@@ -65,6 +65,7 @@ flutter:
     - assets/countries/
     - assets/activities/
     - app_system_assets/
+    - assets/interactions/
 
   fonts:
     - family: Kanit
