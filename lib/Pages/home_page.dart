@@ -1,85 +1,56 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
+import 'package:social_tripper_mobile/Pages/config/post_page_build_config.dart';
+import 'package:social_tripper_mobile/Pages/config/scrolling_treshholds.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/Post/post_generator.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/system_entity_photo_generator.dart';
 import '../Components/Post/post_master.dart';
+import 'generic_content_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
 
   static final GlobalKey<_HomePageState> homePageKey =
-  GlobalKey<_HomePageState>();
+      GlobalKey<_HomePageState>();
 
   @override
   State<HomePage> createState() => _HomePageState();
 }
 
 class _HomePageState extends State<HomePage> {
-  late Future<List<PostMasterModel>> postsFuture; // Zmieniamy na Future
+  final GlobalKey<RefreshIndicatorState> refreshIndicatorKey =
+      GlobalKey<RefreshIndicatorState>();
+  late GenericContentPage<PostMasterModel> content;
+  final ScrollController _scrollController = ScrollController();
 
-  // Asynchroniczne ładowanie postów w initState
   @override
   void initState() {
     super.initState();
-    postsFuture = _loadPosts(); // Wywołanie funkcji do załadowania postów
+    content = GenericContentPage(
+      refreshIndicatorKey: refreshIndicatorKey,
+      scrollTresholdFunction: getLinearThreshold,
+      precachingStrategy: PostPageBuildConfig.cachingStrategy,
+      retrieveContent: PostPageBuildConfig.retrieveElement,
+      buildItem: PostPageBuildConfig.buildItem,
+      scrollController: _scrollController,
+    );
   }
 
-  // Asynchroniczna funkcja do generowania postów
-  Future<List<PostMasterModel>> _loadPosts() async {
-    List<PostMasterModel> posts = [];
-    for (int i = 0; i < 15; i++) {
-      PostMasterModel post = await PostGenerator.generatePost();
-      posts.add(post);
-
-      // Załaduj obrazy dla każdego posta w tle
-      _preloadImagesForPost(post);
-    }
-    return posts;
-  }
-
-
-  // Funkcja do wstępnego ładowania obrazów dla pojedynczego posta
-  Future<void> _preloadImagesForPost(PostMasterModel post) async {
-    if (post.photoURIs != null && post.photoURIs!.isNotEmpty) {
-      await Future.wait(post.photoURIs!.map((uri) async {
-        final image = CachedNetworkImageProvider(uri);
-        await image.resolve(ImageConfiguration());
-      }));
+  void scrollToTop() {
+    if (_scrollController.position.pixels == 0) {
+      refreshIndicatorKey.currentState?.show();
+    } else {
+      _scrollController.animateTo(
+        0,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return RefreshIndicator(
-      onRefresh: () async {
-        setState(() {
-          postsFuture = _loadPosts(); // Odświeżamy zawartość postów
-        });
-      },
-      child: FutureBuilder<List<PostMasterModel>>(
-        future: postsFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return Center(child: CircularProgressIndicator());
-          } else if (snapshot.hasError) {
-            return Center(child: Text('Błąd: ${snapshot.error}'));
-          } else if (snapshot.hasData) {
-            List<PostMasterModel> posts = snapshot.data!;
-            return ListView.builder(
-              itemCount: posts.length, // Liczba postów
-              itemBuilder: (context, index) {
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 9),
-                  child: PostMaster(posts[index]),
-                );
-              },
-            );
-          } else {
-            return Center(child: Text('Brak danych.'));
-          }
-        },
-      ),
-    );
+    return content;
   }
 }

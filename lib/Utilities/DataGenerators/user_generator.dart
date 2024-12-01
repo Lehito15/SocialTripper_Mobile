@@ -18,9 +18,7 @@ class UserGenerator {
       final response = await http.get(Uri.parse('$_apiUrl?results=$count'));
 
       if (response.statusCode == 200) {
-        print("Użytkownicy pobrani pomyślnie");
         final data = jsonDecode(response.body);
-        print(data);  // Logowanie całej odpowiedzi z API
 
         // Sprawdzenie czy odpowiedź zawiera wszystkie wymagane dane
         if (data['results'] != null && data['results'].isNotEmpty) {
@@ -46,8 +44,6 @@ class UserGenerator {
           date: DateGenerator.generateRandomDate(),
         ),
       ];
-    } finally {
-      print(users.length);
     }
   }
 

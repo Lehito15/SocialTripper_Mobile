@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:social_tripper_mobile/Components/Post/BuildingBlocks/post_photo.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
+import 'package:social_tripper_mobile/Utilities/Retrievers/icon_retriever.dart';
 
 import '../../Models/Post/post_master_author.dart';
 import '../../Utilities/DataGenerators/generated_user.dart';
@@ -26,7 +28,8 @@ class _PostMasterState extends State<PostMaster> {
   late bool isLiked;
   late List<String> photoURIs;
   late List<Widget> preloadedImages = [];
-  int _currentPage = 0; // Śledzenie aktualnej strony w PageView
+  int _currentPage = 0;
+  bool _isAnimatingLike = false;
 
   @override
   void initState() {
@@ -35,10 +38,8 @@ class _PostMasterState extends State<PostMaster> {
     commentCount = widget.model.numComments;
     isLiked = widget.model.isLiked;
     _pageController = PageController();
-    // Wczytujemy listę URI zdjęć
     photoURIs = widget.model.photoURIs ?? [];
 
-    // Ładujemy obrazy wstępnie
     preloadedImages = [];
     _preloadImages();
   }
@@ -59,18 +60,24 @@ class _PostMasterState extends State<PostMaster> {
     }
   }
 
-
   void _toggleLike() {
     setState(() {
       if (isLiked) {
         likeCount--;
       } else {
         likeCount++;
+        _isAnimatingLike = true;
+        Future.delayed(Duration(milliseconds: 600), () {
+          print("delayed");
+          setState(() {
+            _isAnimatingLike = false; // Zakończ animację po 600 ms
+          });
+        });
       }
       isLiked = !isLiked;
-
       widget.model.isLiked = isLiked; // Update model's like status
       widget.model.numLikes = likeCount; // Update like count in model
+
     });
   }
 
@@ -93,83 +100,28 @@ class _PostMasterState extends State<PostMaster> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
-                child: TripMasterTopBar(widget.model.author, widget.model.postedDate),
+                child: TripMasterTopBar(
+                  widget.model.author,
+                  widget.model.postedDate,
+                ),
               ),
               SizedBox(height: 9),
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
-                child: PostTextContent(content: widget.model.content),
-              ),
-              // Display image slider if more than one photo URI exists
-              widget.model.photoURIs != null && widget.model.photoURIs!.length == 1 ?
-                AspectRatio(
-                  aspectRatio: 3 / 4,
-                  child: CachedNetworkImage(
-                    imageUrl: widget.model.photoURIs![0],
-                    fit: BoxFit.cover,
-                    placeholder: (context, url) => Center(
-                      child: CircularProgressIndicator(),
-                    ),
-                    errorWidget: (context, url, error) => Center(
-                      child: Icon(Icons.error, color: Colors.red),
-                    ),
-                    fadeInDuration: Duration(milliseconds: 300),
-                    fadeOutDuration: Duration(milliseconds: 300),
-                  ),
-                ) : Container(),
-              widget.model.photoURIs != null && widget.model.photoURIs!.length > 1
-                  ? Container(
-                height: MediaQuery.of(context).size.width * (4 / 3), // 3:4 ratio
-                child: Column(
-                  children: [
-                    // PageView z aktualizacją stanu
-                    Expanded(
-                      child: PageView.builder(
-                        controller: _pageController,
-                        itemCount: widget.model.photoURIs!.length,
-                        itemBuilder: (context, index) {
-                          return CachedNetworkImage(
-                            imageUrl: widget.model.photoURIs![index],
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                            errorWidget: (context, url, error) => Center(
-                              child: Icon(Icons.error, color: Colors.red),
-                            ),
-                            fadeInDuration: Duration(milliseconds: 300),
-                            fadeOutDuration: Duration(milliseconds: 300),
-                          );
-                        },
-                        onPageChanged: _onPageChanged, // Obsługuje zmianę strony
-                      ),
-                    ),
-                    // Wskaźniki na dole
-                    SizedBox(height: 9,),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        widget.model.photoURIs!.length,
-                            (index) => Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 4.0),
-                          width: 8.0,
-                          height: 8.0,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: _currentPage == index
-                                ? Colors.blue // Kolor aktywnego wskaźnika
-                                : Colors.grey, // Kolor nieaktywnego wskaźnika
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
+                child: PostTextContent(
+                  content: widget.model.content,
                 ),
-              )
-                  : Container(),
+              ),
+              PostMedia(widget.model.photoURIs),
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
-                child: Interactions(likeCount, commentCount, isLiked, _toggleLike, _toggleComment),
+                child: Interactions(
+                  likeCount,
+                  commentCount,
+                  isLiked,
+                  _toggleLike,
+                  _toggleComment,
+                ),
               ),
               SizedBox(height: 9),
               Padding(
@@ -177,6 +129,110 @@ class _PostMasterState extends State<PostMaster> {
                 child: PostMasterBottom(widget.model.author.pictureURI),
               ),
             ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget PostMedia(List<String>? urls) {
+    Widget content = Placeholder();
+    if (urls == null || urls.isEmpty) {
+      content = Container();
+    } else if (urls.length == 1) {
+      content = PostPhoto(urls[0]);
+    } else if (urls.length > 1) {
+      content = PhotoSlider(context, _pageController, urls);
+    } else {
+      content = Container();
+    }
+
+
+    if (urls == null) {
+      return content;
+    }
+
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        content,
+        AnimatedOpacity(
+          opacity: _isAnimatingLike ? 1.0 : 0.0, // Jeśli animacja trwa, opacity = 1
+          duration: Duration(milliseconds: 150), // Długość animacji przezroczystości
+          child: AnimatedScale(
+            scale: _isAnimatingLike ? 1.2 : 0.2, // Zamiast 0.2 używamy 1.0, aby animacja była płynniejsza
+            duration: Duration(milliseconds: 300), // Długość animacji zmiany rozmiaru
+            curve: Curves.easeInOut, // Płynniejszy efekt
+            child: Container(
+              width: 120,
+              height: 120,
+              child: SvgPicture.asset("assets/interactions/like_active.svg"),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Container PhotoSlider(
+    BuildContext context,
+    PageController controller,
+    List<String> urls,
+  ) {
+    return Container(
+      height: MediaQuery.of(context).size.width * (4 / 3), // 3:4 ratio
+      child: Column(
+        children: [
+          // PageView z aktualizacją stanu
+          Expanded(
+            child: PageView.builder(
+              controller: controller,
+              itemCount: urls.length,
+              itemBuilder: (context, index) {
+                return CachedNetworkImage(
+                  imageUrl: urls[index],
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Center(
+                    child: CircularProgressIndicator(),
+                  ),
+                  errorWidget: (context, url, error) => Center(
+                    child: Icon(Icons.error, color: Colors.red),
+                  ),
+                  fadeInDuration: Duration(milliseconds: 300),
+                  fadeOutDuration: Duration(milliseconds: 300),
+                );
+              },
+              onPageChanged: _onPageChanged, // Obsługuje zmianę strony
+            ),
+          ),
+          SizedBox(
+            height: 9,
+          ),
+          PhotoSliderBottomIndicator(
+              colorActive: Color(0xffBDF271),
+              colorInactive: Colors.black,
+              radius: 6.0),
+        ],
+      ),
+    );
+  }
+
+  Row PhotoSliderBottomIndicator({
+    double radius = 8.0,
+    Color colorActive = Colors.blue,
+    Color colorInactive = Colors.grey,
+  }) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(
+        widget.model.photoURIs!.length,
+        (index) => Container(
+          margin: const EdgeInsets.symmetric(horizontal: 4.0),
+          width: radius,
+          height: radius,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: _currentPage == index ? colorActive : colorInactive,
           ),
         ),
       ),

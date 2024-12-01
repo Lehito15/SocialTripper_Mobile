@@ -18,7 +18,6 @@ Widget TripMasterView(TripMaster trip) {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // Jeśli TripTopBarMaster nie zmienia się, można to zrobić jako const
           TripTopBarMaster(location: trip.destination),
           const SizedBox(height: 9),
           ClipRRect(

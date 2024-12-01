@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:social_tripper_mobile/Components/TopNavigation/appbar.dart';
-import 'package:social_tripper_mobile/Components/TripMaster/trip_master.dart';
 import 'package:social_tripper_mobile/Pages/home_page.dart';
 import 'package:social_tripper_mobile/Pages/trips_page.dart';
-import 'package:social_tripper_mobile/Utilities/DataGenerators/Trip/trip_generator.dart';
 
 import '../Components/BottomNavigation/bloc/navigation_bloc.dart';
 import '../Components/BottomNavigation/bloc/navigation_state.dart';
 import '../Components/BottomNavigation/bottom_navigation.dart';
-import '../Models/Trip/trip_master.dart';
 
 class PageContainer extends StatefulWidget {
   @override
@@ -20,11 +17,11 @@ class _PageContainerState extends State<PageContainer> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = [
-    HomePage(key: HomePage.homePageKey), // Placeholder dla stron
-    TripsPage(key: TripsPage.tripsPageKey), // Strona wycieczek z GlobalKey
-    Center(child: Text("Relations Page")), // Placeholder
-    Center(child: Text("Groups Page")), // Placeholder
-    Center(child: Text("Explore Page")), // Placeholder
+    HomePage(key: HomePage.homePageKey),
+    TripsPage(key: TripsPage.tripsPageKey),
+    Center(child: Text("Relations Page")),
+    Center(child: Text("Groups Page")),
+    Center(child: Text("Explore Page")),
   ];
 
   @override
@@ -35,7 +32,6 @@ class _PageContainerState extends State<PageContainer> {
       body: BlocListener<NavigationBloc, NavigationState>(
         listener: (context, state) {
           if (state is TabChangedState) {
-
             if (_currentIndex == 1 && _currentIndex == state.currentIndex) {
               final tripsPageState = TripsPage.tripsPageKey.currentState;
               if (tripsPageState != null) {
@@ -46,13 +42,12 @@ class _PageContainerState extends State<PageContainer> {
             if (_currentIndex == 0 && _currentIndex == state.currentIndex) {
               final homePageState = HomePage.homePageKey.currentState;
               if (homePageState != null) {
-                print("a");
+                homePageState.scrollToTop();
               }
             }
             setState(() {
               _currentIndex = state.currentIndex;
             });
-
           }
         },
         child: IndexedStack(

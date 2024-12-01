@@ -76,7 +76,6 @@ class TripGenerator {
         randomActivities.add(language);
       }
     }
-    print(randomActivities);
     return randomActivities;
   }
 
@@ -93,7 +92,6 @@ class TripGenerator {
     Tuple2<int, int> members = generateRandomMembersInfo(1000);
     String tripPicture = await SystemEntityPhotoGenerator.fetchRandomImage();
     GeneratedUser? user = UserGenerator.getRandomUser();
-    print(user);
 
     // Zmienione wywołanie funkcji, z opóźnieniem
 
