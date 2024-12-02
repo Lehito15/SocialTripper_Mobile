@@ -1,8 +1,10 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
+import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Pages/config/post_page_build_config.dart';
 import 'package:social_tripper_mobile/Pages/config/scrolling_treshholds.dart';
+import 'package:social_tripper_mobile/Repositories/post_repository.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/Post/post_generator.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/system_entity_photo_generator.dart';
 import '../Components/Post/post_master.dart';
@@ -28,10 +30,11 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     super.initState();
     content = GenericContentPage(
+      onRefresh: PostRepository.initialize,
       refreshIndicatorKey: refreshIndicatorKey,
       scrollTresholdFunction: getLinearThreshold,
       precachingStrategy: PostPageBuildConfig.cachingStrategy,
-      retrieveContent: PostPageBuildConfig.retrieveElement,
+      retrieveContent: DataRetrievingConfig.source == Source.BACKEND ? PostPageBuildConfig.retrieveBackendElement : PostPageBuildConfig.retrieveGeneratedElement,
       buildItem: PostPageBuildConfig.buildItem,
       scrollController: _scrollController,
     );

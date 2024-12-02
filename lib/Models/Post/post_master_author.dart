@@ -4,15 +4,34 @@ import 'package:social_tripper_mobile/Utilities/DataGenerators/generated_user.da
 
 class PostMasterAuthor {
   String nickname;
-  String pictureURI;
+  String profilePictureUrl;
+  String homePageUrl;
 
-  PostMasterAuthor(this.nickname, this.pictureURI);
+
+  PostMasterAuthor(this.nickname, this.profilePictureUrl, this.homePageUrl);
 
   factory PostMasterAuthor.fromGeneratedUser(
       GeneratedUser user) {
     return PostMasterAuthor(
-      user.username, // Zakładamy, że GeneratedUser ma pole nickname
-      user.picture,  // Zakładamy, że GeneratedUser ma pole picture
+      user.username,
+      user.picture,
+      ""
     );
+  }
+
+  factory PostMasterAuthor.fromJson(Map<String, dynamic> json) {
+    return PostMasterAuthor(
+      json['nickname'] ?? '',
+      json['profilePictureUrl'] ?? '',
+      json['homePageUrl'] ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'nickname': nickname,
+      'profilePictureUrl': profilePictureUrl,
+      'homePageUrl': homePageUrl,
+    };
   }
 }

@@ -21,7 +21,7 @@ class TripMasterTopBar extends StatelessWidget {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        BorderedUserPicture(radius: 34, pictureURI: author.pictureURI),
+        BorderedUserPicture(radius: 34, pictureURI: author.profilePictureUrl),
         SizedBox(width: 8),
         PostedEntityAuthorTextInfo(
           topString: author.nickname,

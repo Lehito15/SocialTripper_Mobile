@@ -44,6 +44,7 @@ class _ExpandableDescriptionTextState extends State<ExpandableDescriptionText> {
       children: [
         Text(
           widget.description,
+          textAlign: TextAlign.left,
           style: widget.textStyle, // Używamy przekazanego stylu
           maxLines: _isExpanded ? null : widget.maxLines, // Używamy przekazanego maxLines
           overflow: _isExpanded ? null : TextOverflow.ellipsis,

@@ -1,5 +1,7 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:social_tripper_mobile/Components/BottomNavigation/bottom_navigation.dart';
 
 import '../../Components/TripMaster/trip_master.dart';
 import '../../Models/Trip/trip_detail.dart';
@@ -15,15 +17,14 @@ class TripPageBuildConfig {
     }
   }
 
-  static Widget buildItem(TripMaster? trip) {
+  static Widget buildItem(TripMaster? trip, BuildContext context) {
     if (trip == null) {
       return const Center(child: Text("Error loading trip"));
     }
 
     Widget clickableTrip = GestureDetector(
       onTap: () {
-        print("clicked");
-        TripDetailPage(tripDetail: TripDetail(trip));
+        context.push('/trips/detail', extra: trip);
       },
       child: TripMasterView(trip),
     );

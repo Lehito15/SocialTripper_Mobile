@@ -14,6 +14,7 @@ class TripMaster {
   Set<String> languages;
   TripOwnerMasterModel tripOwner;
 
+
   TripMaster(
       this.name,
       this.destination,

@@ -5,9 +5,10 @@ Container LanguageMaster(
     SvgPicture child
 ) {
   return Container(
-    decoration: BoxDecoration(color: Colors.greenAccent, boxShadow: [
+    decoration: BoxDecoration(boxShadow: [
       BoxShadow(color: Colors.black.withOpacity(0.25), blurRadius: 2)
     ]),
+
     child: child,
   );
 }

@@ -35,10 +35,10 @@ class _PostMasterState extends State<PostMaster> {
   void initState() {
     super.initState();
     likeCount = widget.model.numLikes;
-    commentCount = widget.model.numComments;
+    commentCount = widget.model.commentsNumber;
     isLiked = widget.model.isLiked;
     _pageController = PageController();
-    photoURIs = widget.model.photoURIs ?? [];
+    photoURIs = widget.model.postMultimediaUrls ?? [];
 
     preloadedImages = [];
     _preloadImages();
@@ -96,6 +96,7 @@ class _PostMasterState extends State<PostMaster> {
         child: Padding(
           padding: const EdgeInsets.only(top: 9, bottom: 9),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             mainAxisSize: MainAxisSize.min,
             children: [
               Padding(
@@ -112,7 +113,7 @@ class _PostMasterState extends State<PostMaster> {
                   content: widget.model.content,
                 ),
               ),
-              PostMedia(widget.model.photoURIs),
+              PostMedia(widget.model.postMultimediaUrls),
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
                 child: Interactions(
@@ -126,7 +127,7 @@ class _PostMasterState extends State<PostMaster> {
               SizedBox(height: 9),
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
-                child: PostMasterBottom(widget.model.author.pictureURI),
+                child: PostMasterBottom(widget.model.author.profilePictureUrl),
               ),
             ],
           ),
@@ -148,7 +149,7 @@ class _PostMasterState extends State<PostMaster> {
     }
 
 
-    if (urls == null) {
+    if (urls == null || urls.isEmpty) {
       return content;
     }
 
@@ -225,7 +226,7 @@ class _PostMasterState extends State<PostMaster> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(
-        widget.model.photoURIs!.length,
+        widget.model.postMultimediaUrls!.length,
         (index) => Container(
           margin: const EdgeInsets.symmetric(horizontal: 4.0),
           width: radius,
