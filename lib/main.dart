@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_detail.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
+import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Pages/home_page.dart';
 import 'package:social_tripper_mobile/Pages/trips_page.dart';
 import 'package:social_tripper_mobile/Repositories/post_repository.dart';
@@ -9,10 +11,35 @@ import 'package:social_tripper_mobile/Utilities/Converters/language_converter.da
 import 'package:social_tripper_mobile/Utilities/DataGenerators/user_generator.dart';
 import 'package:go_router/go_router.dart';
 
+import 'package:amplify_api/amplify_api.dart';
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
+import 'package:amplify_authenticator/amplify_authenticator.dart';
+import 'package:amplify_flutter/amplify_flutter.dart';
+import 'amplifyconfiguration.dart';
+
 import 'Components/BottomNavigation/bottom_navigation.dart';
 import 'Components/TopNavigation/appbar.dart';
 import 'Pages/trip_detail_page.dart';
 import 'Utilities/Tasks/location_task.dart';
+
+Future<void> _configureAmplify() async {
+  // To be filled in
+  try {
+    // Create the API plugin.
+    //
+    // If `ModelProvider.instance` is not available, try running
+    // `amplify codegen models` from the root of your project.
+    // final api = AmplifyAPI();
+    // Create the Auth plugin.
+    final auth = AmplifyAuthCognito();
+    // Add the plugins and configure Amplify for your app.
+    await Amplify.addPlugins([auth]);
+    await Amplify.configure(amplifyconfig);
+    safePrint('Successfully configured');
+  } on Exception catch (e) {
+    safePrint('Error configuring Amplify: $e');
+  }
+}
 
 Future<void> initExamples() async {
   await UserGenerator.fetchRandomUsers(115);
@@ -23,7 +50,10 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initExamples();
   await initService();
-  await PostRepository.initialize();
+  DataRetrievingConfig.source == Source.BACKEND
+      ? await PostRepository.initialize()
+      : print("");
+  await _configureAmplify();
   runApp(const MyApp());
 }
 
@@ -55,12 +85,13 @@ final GoRouter router = GoRouter(
               builder: (context, state) => const TripsPage(),
               routes: [
                 GoRoute(
-                  path: 'detail',
-                  builder: (context, state) {
-                    final tripMaster = state.extra as TripMaster;
-                    return TripDetailPage(tripDetail: TripDetail.fromTripMaster(tripMaster)!,);
-                  }
-                )
+                    path: 'detail',
+                    builder: (context, state) {
+                      final tripMaster = state.extra as TripMaster;
+                      return TripDetailPage(
+                        tripDetail: TripDetail.fromTripMaster(tripMaster)!,
+                      );
+                    })
               ]),
         ]),
         StatefulShellBranch(routes: <RouteBase>[
@@ -91,10 +122,148 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp.router(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(fontFamily: 'Kanit'),
-      routerConfig: router,
+    return Authenticator(
+      // Używamy authenticatorBuilder, aby dostosować wygląd UI
+      authenticatorBuilder: (BuildContext context, AuthenticatorState state) {
+        switch (state.currentStep) {
+          case AuthenticatorStep.signIn:
+            return CustomScaffold(
+              state: state,
+              // Prezentujemy formularz logowania
+              body: SignInForm(),
+              footer: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Don\'t have an account?'),
+                  TextButton(
+                    onPressed: () => state.changeStep(AuthenticatorStep.signUp),
+                    child: const Text('Sign Up'),
+                  ),
+                ],
+              ),
+            );
+          case AuthenticatorStep.signUp:
+            return CustomScaffold(
+              state: state,
+              // Prezentujemy formularz rejestracji
+              body: SignUpForm(),
+              footer: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Text('Already have an account?'),
+                  TextButton(
+                    onPressed: () => state.changeStep(AuthenticatorStep.signIn),
+                    child: const Text('Sign In'),
+                  ),
+                ],
+              ),
+            );
+          default:
+            // Inne kroki mogą być obsługiwane domyślnie
+            return null;
+        }
+      },
+      child: MaterialApp.router(
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          useMaterial3: true,
+          fontFamily: 'Kanit',
+          colorScheme: ColorScheme.fromSwatch(
+            primarySwatch: Colors.green,
+            backgroundColor: Colors.black,
+          ).copyWith(
+            primary: Colors.black,
+            onPrimary: Color(0xFFBDF271),
+          ),
+          inputDecorationTheme: InputDecorationTheme(
+            filled: true,
+            fillColor: Color(0xFFF0F2F5).withOpacity(0.6),
+            focusedBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+              borderRadius: BorderRadius.circular(60),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderSide: BorderSide(color: Colors.grey),
+              borderRadius: BorderRadius.circular(60),
+            ),
+            hintStyle: TextStyle(
+              color: Colors.black.withOpacity(0.5),
+              fontWeight: FontWeight.w500,
+              fontSize: 14,
+            ),
+            labelStyle: TextStyle(
+              color: Colors.black.withOpacity(0.5),
+              fontSize: 14,
+            ),
+            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+            isDense: false,
+          ),
+        ),
+        routerConfig: router,
+        builder: Authenticator.builder(),
+      ),
+    );
+  }
+}
+
+class CustomScaffold extends StatelessWidget {
+  const CustomScaffold({
+    super.key,
+    required this.state,
+    required this.body,
+    this.footer,
+  });
+
+  final AuthenticatorState state;
+  final Widget body;
+  final Widget? footer;
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Padding(
+        padding: const EdgeInsets.all(16),
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              SizedBox(height: 35,),
+              Padding(
+                padding: const EdgeInsets.only(top: 32),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      width: 70,
+                      height: 70,
+                      child: SvgPicture.asset("assets/icons/main_logo.svg"),
+                    ),
+                    SizedBox(width: 10,),
+                    Text(
+                      "SocialTripper",
+                      style: TextStyle(
+                        fontSize: 32,
+                        shadows: [
+                          Shadow(
+                            offset: Offset(-1, 1),  // Wektor przesunięcia cienia (x, y)
+                            blurRadius: 1,           // Promień rozmycia cienia
+                            color: Colors.black.withOpacity(0.25), // Kolor cienia (możesz dostosować przezroczystość)
+                          ),
+                        ],
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              SizedBox(height: 35,),
+              Container(
+                constraints: const BoxConstraints(maxWidth: 600),
+                child: body,
+              ),
+            ],
+          ),
+        ),
+      ),
+      persistentFooterButtons: footer != null ? [footer!] : null,
     );
   }
 }

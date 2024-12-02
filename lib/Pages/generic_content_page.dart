@@ -102,7 +102,7 @@ class _GenericContentPageState<T> extends State<GenericContentPage<T>> {
     }
 
     // Wczytujemy pozostałe dane
-    if (initialLoadCount > 2) {
+    if (initialLoadCount > 2 && _isContent) {
       final futures = List.generate(
         initialLoadCount - 2,
             (_) async {

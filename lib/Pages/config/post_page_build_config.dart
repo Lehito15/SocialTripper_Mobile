@@ -34,10 +34,12 @@ class PostPageBuildConfig {
   }
 
   static Future<PostMasterModel> retrieveGeneratedElement() {
+    print("generating post");
     return PostGenerator.generatePost();
   }
 
   static Future<PostMasterModel?> retrieveBackendElement() {
+    print("retrieving");
     return PostRepository().retrieve();
   }
 }

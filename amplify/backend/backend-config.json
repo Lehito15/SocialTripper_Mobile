@@ -1,0 +1,101 @@
+{
+  "auth": {
+    "socialtrippermobile7028c265": {
+      "customAuth": false,
+      "dependsOn": [],
+      "providerPlugin": "awscloudformation",
+      "service": "Cognito",
+      "serviceType": "imported"
+    }
+  },
+  "parameters": {
+    "AMPLIFY_auth_socialtrippermobile7028c265_allowUnauthenticatedIdentities": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_authRoleArn": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_authRoleName": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_identityPoolId": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_identityPoolName": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_nativeClientId": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_unauthRoleArn": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_unauthRoleName": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_userPoolId": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_userPoolName": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    },
+    "AMPLIFY_auth_socialtrippermobile7028c265_webClientId": {
+      "usedBy": [
+        {
+          "category": "auth",
+          "resourceName": "socialtrippermobile7028c265"
+        }
+      ]
+    }
+  }
+}

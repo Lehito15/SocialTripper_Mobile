@@ -1,13 +1,14 @@
 import 'dart:convert';
 
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
+import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Services/post_service.dart';
 import 'package:http/http.dart' as http;
 
 class PostRepository {
   static int index = 0;
   static List<PostMasterModel> posts = [];
-  static final String baseUrl = "http://156.17.237.164:8080";
+  static final String baseUrl = DataRetrievingConfig.sourceUrl;
 
   static Future<List<PostMasterModel>> _loadAllPosts() async {
     var client = http.Client();

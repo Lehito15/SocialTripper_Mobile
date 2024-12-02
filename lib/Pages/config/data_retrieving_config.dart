@@ -1,6 +1,8 @@
 
 class DataRetrievingConfig {
-  static Source source = Source.GENERATED;
+  static String sourceUrl = "http://52.237.23.55:8080";
+  static Source source = Source.BACKEND;
+
 }
 
 

@@ -26,11 +26,15 @@ class _HomePageState extends State<HomePage> {
   late GenericContentPage<PostMasterModel> content;
   final ScrollController _scrollController = ScrollController();
 
+  Future<void> placeholderOnRefresh() async {
+    await Future.value(0);
+  }
+
   @override
   void initState() {
     super.initState();
     content = GenericContentPage(
-      onRefresh: PostRepository.initialize,
+      onRefresh: DataRetrievingConfig.source == Source.BACKEND ? PostRepository.initialize : placeholderOnRefresh,
       refreshIndicatorKey: refreshIndicatorKey,
       scrollTresholdFunction: getLinearThreshold,
       precachingStrategy: PostPageBuildConfig.cachingStrategy,
@@ -54,6 +58,7 @@ class _HomePageState extends State<HomePage> {
 
   @override
   Widget build(BuildContext context) {
+    print("building home page");
     return content;
   }
 }
