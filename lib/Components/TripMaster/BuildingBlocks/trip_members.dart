@@ -11,7 +11,7 @@ Row TripMembers({
   return Row(
     children: [
       Text(
-        "$currentMembers/$maxMembers",
+        maxMembers == -1 ? "$currentMembers" : "$currentMembers/$maxMembers",
         style: TextStyle(fontWeight: FontWeight.w600, fontSize: fontSize),
       ),
       SizedBox(

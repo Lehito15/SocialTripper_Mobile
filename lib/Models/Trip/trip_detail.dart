@@ -54,4 +54,8 @@ class TripDetail {
       lang_reqs,
     );
   }
+
+  // factory TripDetail.fromJson(TripMaster tripMaster) {
+  //
+  // }
 }

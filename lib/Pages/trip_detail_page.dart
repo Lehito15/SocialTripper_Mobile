@@ -24,8 +24,6 @@ class TripDetailPage extends StatefulWidget {
   const TripDetailPage(
       {super.key, required this.tripDetail}); // Nowy konstruktor
 
-  static final GlobalKey<_TripDetailPageState> tripDetailKey =
-      GlobalKey<_TripDetailPageState>();
 
   @override
   State<TripDetailPage> createState() => _TripDetailPageState();
@@ -84,8 +82,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Column(
+    return ListView(
         children: [
           TripDetailCore(),
           SizedBox(
@@ -93,8 +90,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
           ),
           buildSubsite(),
         ],
-      ),
-    );
+      );
   }
 
   Column Members() {
@@ -488,18 +484,20 @@ class _TripDetailPageState extends State<TripDetailPage> {
     );
   }
 
-  Column Information(String generalInformation, String rules) {
+  Widget Information(String generalInformation, String rules) {
     return Column(
       children: [
         TitledSectionMediumBordered(
           title: "General information",
           child: TripDetailGeneralInformation(generalInformation),
           spacing: 9,
+          padding: EdgeInsets.symmetric(horizontal: 9),
         ),
         TitledSectionMediumBordered(
           title: "Trip rules",
           child: TripDetailGeneralInformation(rules),
           spacing: 9,
+          padding: EdgeInsets.symmetric(horizontal: 9),
         ),
       ],
     );
@@ -795,8 +793,21 @@ class _TripDetailPageState extends State<TripDetailPage> {
   AspectRatio TripDetailPhoto(String photoURI) {
     return AspectRatio(
       aspectRatio: 16 / 9,
-      child: CachedNetworkImage(imageUrl: photoURI, fit: BoxFit.cover),
-    );
+      child: photoURI != null && Uri.tryParse(photoURI)?.hasAbsolutePath == true
+          ? CachedNetworkImage(
+        imageUrl: photoURI!,
+        fit: BoxFit.cover,
+        placeholder: (context, url) => Center(child: CircularProgressIndicator()), // Placeholder w trakcie ładowania
+        errorWidget: (context, url, error) => Icon(Icons.error), // Ikona błędu w razie problemów z ładowaniem
+      )
+          : Padding(
+            padding: const EdgeInsets.all(9.0),
+            child: SvgPicture.asset(
+                    'assets/icons/main_logo.svg',
+                    fit: BoxFit.fitHeight, // Dopasowanie SVG do kontenera
+                  ),
+          ),
+    );;
   }
 }
 

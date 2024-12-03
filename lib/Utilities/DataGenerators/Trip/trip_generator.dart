@@ -97,6 +97,7 @@ class TripGenerator {
 
     // TripOwnerMasterModel tripOwnerMaster = TripOwnerMasterModel()
     return TripMaster(
+      "0000-0000-0000-0000",
         title,
         destination,
         start,

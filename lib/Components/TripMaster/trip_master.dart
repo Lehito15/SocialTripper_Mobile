@@ -1,5 +1,6 @@
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:social_tripper_mobile/Components/TripMaster/BuildingBlocks/trip_bottom_row_master.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'BuildingBlocks/trip_date_title_row.dart';
@@ -22,12 +23,24 @@ Widget TripMasterView(TripMaster trip) {
           const SizedBox(height: 9),
           ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: AspectRatio(
-                  aspectRatio: 16 / 9,
-                  child: CachedNetworkImage(
-                    imageUrl: trip.photoUri,
-                    fit: BoxFit.cover,
-                  ))),
+              child:  AspectRatio(
+                aspectRatio: 16 / 9,
+                child: trip.photoUri.length != null && Uri.tryParse(trip.photoUri)?.hasAbsolutePath == true
+                    ? CachedNetworkImage(
+                  imageUrl: trip.photoUri,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Center(child: CircularProgressIndicator()), // Placeholder podczas ładowania
+                  errorWidget: (context, url, error) => Icon(Icons.error), // Ikona błędu w przypadku problemu z załadowaniem
+                )
+                    : Padding(
+                      padding: const EdgeInsets.all(18.0),
+                      child: SvgPicture.asset(
+                                        'assets/icons/main_logo.svg', // Lokalny obraz SVG
+                                        fit: BoxFit.contain, // Dopasowanie do dostępnego obszaru
+                                      ),
+                    ),
+              )
+          ),
           const SizedBox(height: 9),
           TripDateTitleRow(trip.startDate, trip.endDate, trip.name),
           const SizedBox(height: 9),

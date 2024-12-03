@@ -5,16 +5,36 @@ import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
 import 'package:social_tripper_mobile/Repositories/post_repository.dart';
 import 'package:social_tripper_mobile/Services/post_service.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/Post/post_generator.dart';
+import 'package:video_player/video_player.dart';
 
 
 class PostPageBuildConfig {
   static Future<void> cachingStrategy(PostMasterModel trip, BuildContext context) async {
     if (trip.postMultimediaUrls != null && trip.postMultimediaUrls!.isNotEmpty) {
       await Future.wait(trip.postMultimediaUrls!.map((uri) async {
-        final image = CachedNetworkImageProvider(uri);
-        await image.resolve(ImageConfiguration());
+        if (_isImage(uri)) {
+          print("Caching image: $uri");
+          final image = CachedNetworkImageProvider(uri);
+          await image.resolve(ImageConfiguration());
+        } else if (_isVideo(uri)) {
+          print("Caching video: $uri");
+          final controller = VideoPlayerController.network(uri);
+          await controller.initialize();
+          controller.dispose(); // Zwolnij pamięć po wideo
+        } else {
+          print("Unsupported format: $uri");
+        }
       }));
     }
+  }
+
+// Funkcje pomocnicze do identyfikacji typu pliku
+  static bool _isImage(String uri) {
+    return uri.endsWith('.jpg') || uri.endsWith('.jpeg') || uri.endsWith('.png') || uri.endsWith('.jfif');
+  }
+
+  static bool _isVideo(String uri) {
+    return uri.endsWith('.mp4') || uri.endsWith('.mov') || uri.endsWith('.avi');
   }
 
   static Widget buildItem(PostMasterModel? postMasterModel, BuildContext context) {

@@ -2,14 +2,14 @@ import 'dart:isolate';
 
 import 'package:flutter/material.dart';
 import 'package:social_tripper_mobile/Pages/config/scrolling_treshholds.dart';
+import 'package:social_tripper_mobile/Repositories/trip_repository.dart';
 
 import '../Models/Trip/trip_master.dart';
+import 'config/data_retrieving_config.dart';
 import 'config/trip_page_build_config.dart';
 import 'generic_content_page.dart';
 
 class TripsPage extends StatefulWidget {
-  static final GlobalKey<_TripsPageState> tripsPageKey =
-      GlobalKey<_TripsPageState>();
 
   const TripsPage({Key? key}) : super(key: key);
 
@@ -18,20 +18,23 @@ class TripsPage extends StatefulWidget {
 }
 
 class _TripsPageState extends State<TripsPage> {
-  final GlobalKey<RefreshIndicatorState> refreshIndicatorKey =
-      GlobalKey<RefreshIndicatorState>();
   final ScrollController _scrollController = ScrollController();
 
   late GenericContentPage<TripMaster> content;
+
+
+  Future<void> placeholderOnRefresh() async {
+    await Future.value(0);
+  }
 
   @override
   void initState() {
     super.initState();
     content = GenericContentPage(
-      refreshIndicatorKey: refreshIndicatorKey,
+      onRefresh: DataRetrievingConfig.source == Source.BACKEND ? TripRepository.initialize : placeholderOnRefresh,
       scrollTresholdFunction: getLinearThreshold,
       precachingStrategy: TripPageBuildConfig.cachingStrategy,
-      retrieveContent: TripPageBuildConfig.retrieveElement,
+      retrieveContent: DataRetrievingConfig.source == Source.BACKEND ? TripPageBuildConfig.retrieveBackendElement : TripPageBuildConfig.retrieveGeneratedElement,
       buildItem: TripPageBuildConfig.buildItem,
       scrollController: _scrollController,
     );
@@ -39,7 +42,6 @@ class _TripsPageState extends State<TripsPage> {
 
   void scrollToTop() {
     if (_scrollController.position.pixels == 0) {
-      refreshIndicatorKey.currentState?.show();
     } else {
       _scrollController.animateTo(
         0,

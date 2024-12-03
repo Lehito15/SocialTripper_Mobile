@@ -3,10 +3,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:social_tripper_mobile/Components/Post/BuildingBlocks/post_photo.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
-import 'package:social_tripper_mobile/Utilities/Retrievers/icon_retriever.dart';
+import 'package:video_player/video_player.dart';
 
-import '../../Models/Post/post_master_author.dart';
-import '../../Utilities/DataGenerators/generated_user.dart';
 import '../Shared/interactions.dart';
 import 'BuildingBlocks/post_master_bottom.dart';
 import 'BuildingBlocks/post_text_content.dart';
@@ -54,10 +52,21 @@ class _PostMasterState extends State<PostMaster> {
   Future<void> _preloadImages() async {
     if (photoURIs.isNotEmpty) {
       await Future.wait(photoURIs.map((uri) async {
-        final image = CachedNetworkImageProvider(uri);
-        await image.resolve(ImageConfiguration());
+        if (_isVideo(uri)) {
+          final controller = VideoPlayerController.network(uri);
+          await controller.initialize(); // Buforowanie wideo
+          controller.dispose(); // Zwolnienie kontrolera po preładowaniu
+        } else {
+          final image = CachedNetworkImageProvider(uri);
+          await image.resolve(ImageConfiguration());
+        }
       }));
     }
+  }
+
+  bool _isVideo(String uri) {
+    final lowerUri = uri.toLowerCase();
+    return lowerUri.endsWith('.mp4') || lowerUri.endsWith('.mov') || lowerUri.endsWith('.avi');
   }
 
   void _toggleLike() {
@@ -107,12 +116,13 @@ class _PostMasterState extends State<PostMaster> {
                 ),
               ),
               SizedBox(height: 9),
+              widget.model.content.length > 0 ?
               Padding(
-                padding: const EdgeInsets.only(left: 9, right: 9),
+                padding: const EdgeInsets.only(left: 9, right: 9, bottom: 9),
                 child: PostTextContent(
                   content: widget.model.content,
                 ),
-              ),
+              ) : Container(),
               PostMedia(widget.model.postMultimediaUrls),
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
@@ -141,7 +151,7 @@ class _PostMasterState extends State<PostMaster> {
     if (urls == null || urls.isEmpty) {
       content = Container();
     } else if (urls.length == 1) {
-      content = PostPhoto(urls[0]);
+      content = PostPhoto(url: urls[0]);
     } else if (urls.length > 1) {
       content = PhotoSlider(context, _pageController, urls);
     } else {

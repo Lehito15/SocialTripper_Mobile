@@ -2,7 +2,6 @@ import 'dart:convert';
 
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
 import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
-import 'package:social_tripper_mobile/Services/post_service.dart';
 import 'package:http/http.dart' as http;
 
 class PostRepository {

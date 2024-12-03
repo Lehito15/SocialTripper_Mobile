@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 class GenericContentPage<T> extends StatefulWidget {
-  final GlobalKey<RefreshIndicatorState> refreshIndicatorKey;
   final double Function(int, int) scrollTresholdFunction;
   final Future<void>? Function(T, BuildContext) precachingStrategy;
   final Future<T?> Function() retrieveContent;
@@ -11,7 +10,6 @@ class GenericContentPage<T> extends StatefulWidget {
 
   GenericContentPage({
     super.key,
-    required this.refreshIndicatorKey,
     required this.scrollTresholdFunction,
     required this.precachingStrategy,
     required this.retrieveContent,
@@ -178,7 +176,6 @@ class _GenericContentPageState<T> extends State<GenericContentPage<T>> {
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-        key: widget.refreshIndicatorKey,
         onRefresh: _loadInitialContent,
         child: _isLoading && _loadedContent.isEmpty
             ? Center(child: CircularProgressIndicator())

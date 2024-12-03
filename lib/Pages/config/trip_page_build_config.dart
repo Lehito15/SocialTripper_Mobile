@@ -2,6 +2,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_tripper_mobile/Components/BottomNavigation/bottom_navigation.dart';
+import 'package:social_tripper_mobile/Repositories/trip_repository.dart';
 
 import '../../Components/TripMaster/trip_master.dart';
 import '../../Models/Trip/trip_detail.dart';
@@ -35,7 +36,12 @@ class TripPageBuildConfig {
     );
   }
 
-  static Future<TripMaster> retrieveElement() {
+  static Future<TripMaster> retrieveGeneratedElement() {
     return TripGenerator.generateTripMaster();
+  }
+
+  static Future<TripMaster?> retrieveBackendElement() {
+    print("retrieving trip");
+    return TripRepository().retrieve();
   }
 }

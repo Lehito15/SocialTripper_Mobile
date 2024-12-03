@@ -4,8 +4,10 @@ import 'package:social_tripper_mobile/Models/Trip/trip_detail.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Pages/home_page.dart';
+import 'package:social_tripper_mobile/Pages/trip_interface.dart';
 import 'package:social_tripper_mobile/Pages/trips_page.dart';
 import 'package:social_tripper_mobile/Repositories/post_repository.dart';
+import 'package:social_tripper_mobile/Repositories/trip_repository.dart';
 import 'package:social_tripper_mobile/Services/post_service.dart';
 import 'package:social_tripper_mobile/Utilities/Converters/language_converter.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/user_generator.dart';
@@ -15,6 +17,7 @@ import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_authenticator/amplify_authenticator.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'Pages/data_loading_page.dart';
 import 'amplifyconfiguration.dart';
 
 import 'Components/BottomNavigation/bottom_navigation.dart';
@@ -53,18 +56,27 @@ Future<void> main() async {
   DataRetrievingConfig.source == Source.BACKEND
       ? await PostRepository.initialize()
       : print("");
+  DataRetrievingConfig.source == Source.BACKEND
+      ? await TripRepository.initialize()
+      : print("");
   await _configureAmplify();
   runApp(const MyApp());
 }
 
 final GoRouter router = GoRouter(
-  initialLocation: '/home', // Domyślna lokalizacja
+  initialLocation: '/data_loading', // Domyślna lokalizacja
   routes: [
+    GoRoute(
+      path: '/data_loading', // Strona powitalna, która będzie ładować dane
+      builder: (context, state) {
+        return DataLoadingPage(); // Nasz SplashScreen
+      },
+    ),
     StatefulShellRoute.indexedStack(
       builder: (BuildContext context, GoRouterState state,
           StatefulNavigationShell navigationShell) {
         return Scaffold(
-          appBar: CustomAppBar(),
+          appBar: CustomAppBar(context),
           backgroundColor: const Color(0xFFF0F2F5),
           body: navigationShell, // Używamy nawigacji jako dziecko
           bottomNavigationBar: CustomBottomNavBar(
@@ -109,7 +121,7 @@ final GoRouter router = GoRouter(
         StatefulShellBranch(routes: <RouteBase>[
           GoRoute(
             path: '/explore',
-            builder: (context, state) => const Text("xplr"),
+            builder: (context, state) => const TripInterface(),
           )
         ]),
       ],
@@ -123,7 +135,6 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Authenticator(
-      // Używamy authenticatorBuilder, aby dostosować wygląd UI
       authenticatorBuilder: (BuildContext context, AuthenticatorState state) {
         switch (state.currentStep) {
           case AuthenticatorStep.signIn:
@@ -164,43 +175,47 @@ class MyApp extends StatelessWidget {
         }
       },
       child: MaterialApp.router(
-        debugShowCheckedModeBanner: false,
-        theme: ThemeData(
-          useMaterial3: true,
-          fontFamily: 'Kanit',
-          colorScheme: ColorScheme.fromSwatch(
-            primarySwatch: Colors.green,
-            backgroundColor: Colors.black,
-          ).copyWith(
-            primary: Colors.black,
-            onPrimary: Color(0xFFBDF271),
-          ),
-          inputDecorationTheme: InputDecorationTheme(
-            filled: true,
-            fillColor: Color(0xFFF0F2F5).withOpacity(0.6),
-            focusedBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey),
-              borderRadius: BorderRadius.circular(60),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: Colors.grey),
-              borderRadius: BorderRadius.circular(60),
-            ),
-            hintStyle: TextStyle(
-              color: Colors.black.withOpacity(0.5),
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-            labelStyle: TextStyle(
-              color: Colors.black.withOpacity(0.5),
-              fontSize: 14,
-            ),
-            contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-            isDense: false,
-          ),
+          debugShowCheckedModeBanner: false,
+          theme: AppThemeData(),
+          routerConfig: router,
+          builder: Authenticator.builder()
+      ),
+    );
+  }
+
+  ThemeData AppThemeData() {
+    return ThemeData(
+      useMaterial3: true,
+      fontFamily: 'Kanit',
+      colorScheme: ColorScheme.fromSwatch(
+        primarySwatch: Colors.green,
+        backgroundColor: Colors.black,
+      ).copyWith(
+        primary: Colors.black,
+        onPrimary: Color(0xFFBDF271),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: Color(0xFFF0F2F5).withOpacity(0.6),
+        focusedBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.grey),
+          borderRadius: BorderRadius.circular(60),
         ),
-        routerConfig: router,
-        builder: Authenticator.builder(),
+        enabledBorder: OutlineInputBorder(
+          borderSide: BorderSide(color: Colors.grey),
+          borderRadius: BorderRadius.circular(60),
+        ),
+        hintStyle: TextStyle(
+          color: Colors.black.withOpacity(0.5),
+          fontWeight: FontWeight.w500,
+          fontSize: 14,
+        ),
+        labelStyle: TextStyle(
+          color: Colors.black.withOpacity(0.5),
+          fontSize: 14,
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+        isDense: false,
       ),
     );
   }
@@ -226,7 +241,9 @@ class CustomScaffold extends StatelessWidget {
         child: SingleChildScrollView(
           child: Column(
             children: [
-              SizedBox(height: 35,),
+              SizedBox(
+                height: 35,
+              ),
               Padding(
                 padding: const EdgeInsets.only(top: 32),
                 child: Row(
@@ -237,16 +254,21 @@ class CustomScaffold extends StatelessWidget {
                       height: 70,
                       child: SvgPicture.asset("assets/icons/main_logo.svg"),
                     ),
-                    SizedBox(width: 10,),
+                    SizedBox(
+                      width: 10,
+                    ),
                     Text(
                       "SocialTripper",
                       style: TextStyle(
                         fontSize: 32,
                         shadows: [
                           Shadow(
-                            offset: Offset(-1, 1),  // Wektor przesunięcia cienia (x, y)
-                            blurRadius: 1,           // Promień rozmycia cienia
-                            color: Colors.black.withOpacity(0.25), // Kolor cienia (możesz dostosować przezroczystość)
+                            offset: Offset(-1, 1),
+                            // Wektor przesunięcia cienia (x, y)
+                            blurRadius: 1,
+                            // Promień rozmycia cienia
+                            color: Colors.black.withOpacity(
+                                0.25), // Kolor cienia (możesz dostosować przezroczystość)
                           ),
                         ],
                       ),
@@ -254,7 +276,9 @@ class CustomScaffold extends StatelessWidget {
                   ],
                 ),
               ),
-              SizedBox(height: 35,),
+              SizedBox(
+                height: 35,
+              ),
               Container(
                 constraints: const BoxConstraints(maxWidth: 600),
                 child: body,
