@@ -3,6 +3,8 @@ import 'dart:math';
 
 import 'package:social_tripper_mobile/Models/Activity/trip_detail_activity.dart';
 import 'package:social_tripper_mobile/Models/Language/trip_detail_language.dart';
+import 'package:social_tripper_mobile/Models/Shared/required_activity.dart';
+import 'package:social_tripper_mobile/Models/Shared/required_language.dart';
 
 class RequirementsGenerator {
 
@@ -14,24 +16,24 @@ class RequirementsGenerator {
     return randomValue / 10.0;
   }
 
-  static List<TripDetailActivity> generateAcitivityRequirements(
-      Iterable<String> activities) {
-    List<TripDetailActivity> result = [];
+  static Set<TripDetailActivity> generateAcitivityRequirements(
+      Set<RequiredActivity> activities) {
+    Set<TripDetailActivity> result = Set();
     for (var activity in activities) {
       final value = _generateRandomValue();
-      result.add(TripDetailActivity(activity, value));
+      result.add(TripDetailActivity(activity.activity.name, value));
     }
 
     return result;
   }
 
 
-  static List<TripDetailLanguage> generateLanguageRequirements(
-      Iterable<String> languages) {
-    List<TripDetailLanguage> result = [];
+  static Set<TripDetailLanguage> generateLanguageRequirements(
+      Set<RequiredLanguage> languages) {
+    Set<TripDetailLanguage> result = Set();
     for (var language in languages) {
       final value = _generateRandomValue();
-      result.add(TripDetailLanguage(language, value));
+      result.add(TripDetailLanguage(language.language.name, value));
     }
     return result;
   }

@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
+import 'package:social_tripper_mobile/Components/BottomNavigation/bottom_navigation.dart';
 import 'package:social_tripper_mobile/Components/Post/BuildingBlocks/post_photo.dart';
+import 'package:social_tripper_mobile/Models/Account/account.dart';
+import 'package:social_tripper_mobile/Models/Comment/post_comment.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
+import 'package:social_tripper_mobile/Services/account_service.dart';
+import 'package:social_tripper_mobile/Services/comment_service.dart';
+import 'package:social_tripper_mobile/Services/post_service.dart';
 import 'package:video_player/video_player.dart';
 
 import '../Shared/interactions.dart';
@@ -24,19 +31,21 @@ class _PostMasterState extends State<PostMaster> {
   late int likeCount;
   late int commentCount;
   late bool isLiked;
-  late List<String> photoURIs;
+  late Set<String> photoURIs;
   late List<Widget> preloadedImages = [];
   int _currentPage = 0;
   bool _isAnimatingLike = false;
+  PostService postService = PostService();
+  AccountService accountService = AccountService();
 
   @override
   void initState() {
     super.initState();
-    likeCount = widget.model.numLikes;
+    likeCount = widget.model.reactionsNumber;
     commentCount = widget.model.commentsNumber;
     isLiked = widget.model.isLiked;
     _pageController = PageController();
-    photoURIs = widget.model.postMultimediaUrls ?? [];
+    photoURIs = widget.model.postMultimediaUrls ?? Set<String>();
 
     preloadedImages = [];
     _preloadImages();
@@ -66,36 +75,73 @@ class _PostMasterState extends State<PostMaster> {
 
   bool _isVideo(String uri) {
     final lowerUri = uri.toLowerCase();
-    return lowerUri.endsWith('.mp4') || lowerUri.endsWith('.mov') || lowerUri.endsWith('.avi');
+    return lowerUri.endsWith('.mp4') ||
+        lowerUri.endsWith('.mov') ||
+        lowerUri.endsWith('.avi');
   }
 
-  void _toggleLike() {
+  void _toggleLike() async {
+    final String accountUUID =
+        await AccountService().getSavedAccountUUID() ?? "";
     setState(() {
       if (isLiked) {
         likeCount--;
+        isLiked = false;
+        widget.model.isLiked = isLiked;
+        widget.model.reactionsNumber = likeCount;
+        postService.unlikePost(accountUUID, widget.model.uuid).then((success) {
+          if (!success) {
+            print("Failed to unlike post.");
+          } else {
+            print("Unliked the post");
+          }
+        }).catchError((e) {
+          print("Error while liking post: $e");
+        });
       } else {
+        postService.likePost(accountUUID, widget.model.uuid).then((success) {
+          if (!success) {
+            print("Failed to like post.");
+          }
+        }).catchError((e) {
+          print("Error while liking post: $e");
+        });
         likeCount++;
+        isLiked = true;
+        widget.model.isLiked = isLiked;
+        widget.model.reactionsNumber = likeCount;
         _isAnimatingLike = true;
+
+        // Animacja po polubieniu
         Future.delayed(Duration(milliseconds: 600), () {
-          print("delayed");
           setState(() {
-            _isAnimatingLike = false; // Zakończ animację po 600 ms
+            _isAnimatingLike = false; // End animation
           });
         });
       }
-      isLiked = !isLiked;
-      widget.model.isLiked = isLiked; // Update model's like status
-      widget.model.numLikes = likeCount; // Update like count in model
-
     });
   }
 
-  void _toggleComment() {
-    print("Comment clicked");
+  void commentCallback() {
+    print("comment callback");
+    setState(() {
+      commentCount ++;
+      widget.model.commentsNumber = commentCount;
+    });
+  }
+
+  Future<void> _toggleComment() async {
+    print("clicked comments");
+    context.push("/post_comments", extra: {
+      'model': widget.model,
+      'like_callback': _toggleLike,
+      'comment_callback': commentCallback
+    });
   }
 
   @override
   Widget build(BuildContext context) {
+    print(widget.model.content.length);
     return GestureDetector(
       onDoubleTap: _toggleLike, // Action on double tap
       child: Container(
@@ -111,18 +157,20 @@ class _PostMasterState extends State<PostMaster> {
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
                 child: TripMasterTopBar(
-                  widget.model.author,
-                  widget.model.postedDate,
+                  widget.model.account,
+                  widget.model.dateOfPost,
                 ),
               ),
               SizedBox(height: 9),
-              widget.model.content.length > 0 ?
-              Padding(
-                padding: const EdgeInsets.only(left: 9, right: 9, bottom: 9),
-                child: PostTextContent(
-                  content: widget.model.content,
-                ),
-              ) : Container(),
+              widget.model.content.length > 0
+                  ? Padding(
+                      padding:
+                          const EdgeInsets.only(left: 9, right: 9),
+                      child: PostTextContent(
+                        content: widget.model.content,
+                      ),
+                    )
+                  : Container(),
               PostMedia(widget.model.postMultimediaUrls),
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
@@ -137,7 +185,10 @@ class _PostMasterState extends State<PostMaster> {
               SizedBox(height: 9),
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
-                child: PostMasterBottom(widget.model.author.profilePictureUrl),
+                child: PostMasterBottom(
+                  widget.model.account.profilePictureUrl,
+                  _toggleComment,
+                ),
               ),
             ],
           ),
@@ -146,18 +197,17 @@ class _PostMasterState extends State<PostMaster> {
     );
   }
 
-  Widget PostMedia(List<String>? urls) {
+  Widget PostMedia(Set<String> urls) {
     Widget content = Placeholder();
-    if (urls == null || urls.isEmpty) {
-      content = Container();
+    if (urls.isEmpty) {
+      content = SizedBox(width: 0, height: 0,);
     } else if (urls.length == 1) {
-      content = PostPhoto(url: urls[0]);
+      content = PostPhoto(url: urls.elementAt(0));
     } else if (urls.length > 1) {
       content = PhotoSlider(context, _pageController, urls);
     } else {
-      content = Container();
+      content = SizedBox(width: 0, height: 0,);
     }
-
 
     if (urls == null || urls.isEmpty) {
       return content;
@@ -168,12 +218,17 @@ class _PostMasterState extends State<PostMaster> {
       children: [
         content,
         AnimatedOpacity(
-          opacity: _isAnimatingLike ? 1.0 : 0.0, // Jeśli animacja trwa, opacity = 1
-          duration: Duration(milliseconds: 150), // Długość animacji przezroczystości
+          opacity: _isAnimatingLike ? 1.0 : 0.0,
+          // Jeśli animacja trwa, opacity = 1
+          duration: Duration(milliseconds: 150),
+          // Długość animacji przezroczystości
           child: AnimatedScale(
-            scale: _isAnimatingLike ? 1.2 : 0.2, // Zamiast 0.2 używamy 1.0, aby animacja była płynniejsza
-            duration: Duration(milliseconds: 300), // Długość animacji zmiany rozmiaru
-            curve: Curves.easeInOut, // Płynniejszy efekt
+            scale: _isAnimatingLike ? 1.2 : 0.2,
+            // Zamiast 0.2 używamy 1.0, aby animacja była płynniejsza
+            duration: Duration(milliseconds: 300),
+            // Długość animacji zmiany rozmiaru
+            curve: Curves.easeInOut,
+            // Płynniejszy efekt
             child: Container(
               width: 120,
               height: 120,
@@ -188,7 +243,7 @@ class _PostMasterState extends State<PostMaster> {
   Container PhotoSlider(
     BuildContext context,
     PageController controller,
-    List<String> urls,
+    Set<String> urls,
   ) {
     return Container(
       height: MediaQuery.of(context).size.width * (4 / 3), // 3:4 ratio
@@ -201,7 +256,7 @@ class _PostMasterState extends State<PostMaster> {
               itemCount: urls.length,
               itemBuilder: (context, index) {
                 return CachedNetworkImage(
-                  imageUrl: urls[index],
+                  imageUrl: urls.elementAt(index),
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Center(
                     child: CircularProgressIndicator(),

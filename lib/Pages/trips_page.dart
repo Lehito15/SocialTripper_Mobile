@@ -34,7 +34,7 @@ class _TripsPageState extends State<TripsPage> {
       onRefresh: DataRetrievingConfig.source == Source.BACKEND ? TripRepository.initialize : placeholderOnRefresh,
       scrollTresholdFunction: getLinearThreshold,
       precachingStrategy: TripPageBuildConfig.cachingStrategy,
-      retrieveContent: DataRetrievingConfig.source == Source.BACKEND ? TripPageBuildConfig.retrieveBackendElement : TripPageBuildConfig.retrieveGeneratedElement,
+      retrieveContent: TripPageBuildConfig.retrieveBackendElement,
       buildItem: TripPageBuildConfig.buildItem,
       scrollController: _scrollController,
     );

@@ -25,9 +25,9 @@ Widget TripMasterView(TripMaster trip) {
               borderRadius: BorderRadius.circular(10),
               child:  AspectRatio(
                 aspectRatio: 16 / 9,
-                child: trip.photoUri.length != null && Uri.tryParse(trip.photoUri)?.hasAbsolutePath == true
+                child: trip.iconUrl != null && Uri.tryParse(trip.iconUrl!)?.hasAbsolutePath == true
                     ? CachedNetworkImage(
-                  imageUrl: trip.photoUri,
+                  imageUrl: trip.iconUrl!,
                   fit: BoxFit.cover,
                   placeholder: (context, url) => Center(child: CircularProgressIndicator()), // Placeholder podczas ładowania
                   errorWidget: (context, url, error) => Icon(Icons.error), // Ikona błędu w przypadku problemu z załadowaniem
@@ -42,7 +42,7 @@ Widget TripMasterView(TripMaster trip) {
               )
           ),
           const SizedBox(height: 9),
-          TripDateTitleRow(trip.startDate, trip.endDate, trip.name),
+          TripDateTitleRow(trip.eventStartTime, trip.eventEndTime, trip.name),
           const SizedBox(height: 9),
           TripDescriptionMaster(description: trip.description),
           const SizedBox(height: 9),
@@ -50,7 +50,7 @@ Widget TripMasterView(TripMaster trip) {
               activities: trip.activities, languages: trip.languages),
           const SizedBox(height: 20),
           TripBottomRowMaster(
-              owner: trip.tripOwner,
+              owner: trip.owner,
               currentMembers: trip.numberOfParticipants,
               maxMembers: trip.maxNumberOfParticipants),
         ],

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:social_tripper_mobile/Models/Account/account_thumbnail.dart';
 
 import '../../../Models/Post/post_master_author.dart';
 import '../../../Utilities/Converters/date_converter.dart';
@@ -7,7 +8,7 @@ import '../../Shared/entity_options_default.dart';
 import '../../Shared/posted_entity_author_info.dart';
 
 class TripMasterTopBar extends StatelessWidget {
-  final PostMasterAuthor author;
+  final AccountThumbnail author;
   final DateTime postedDate;
 
 

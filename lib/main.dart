@@ -1,19 +1,19 @@
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:social_tripper_mobile/Models/Trip/trip_detail.dart';
+import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Pages/home_page.dart';
+import 'package:social_tripper_mobile/Pages/post_comments_page.dart';
 import 'package:social_tripper_mobile/Pages/trip_interface.dart';
 import 'package:social_tripper_mobile/Pages/trips_page.dart';
 import 'package:social_tripper_mobile/Repositories/post_repository.dart';
 import 'package:social_tripper_mobile/Repositories/trip_repository.dart';
-import 'package:social_tripper_mobile/Services/post_service.dart';
 import 'package:social_tripper_mobile/Utilities/Converters/language_converter.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/user_generator.dart';
 import 'package:go_router/go_router.dart';
 
-import 'package:amplify_api/amplify_api.dart';
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_authenticator/amplify_authenticator.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
@@ -22,8 +22,12 @@ import 'amplifyconfiguration.dart';
 
 import 'Components/BottomNavigation/bottom_navigation.dart';
 import 'Components/TopNavigation/appbar.dart';
-import 'Pages/trip_detail_page.dart';
+import 'Pages/TripDetail/trip_detail_page.dart';
 import 'Utilities/Tasks/location_task.dart';
+
+
+
+
 
 Future<void> _configureAmplify() async {
   // To be filled in
@@ -60,6 +64,12 @@ Future<void> main() async {
       ? await TripRepository.initialize()
       : print("");
   await _configureAmplify();
+  // if (kDebugMode) {
+  //   await Amplify.Auth.signOut();
+  //   final prefs = await SharedPreferences.getInstance();  // Pobiera instancję SharedPreferences
+  //   prefs.clear();
+  //   print("wyczyszczono");
+  // }
   runApp(const MyApp());
 }
 
@@ -87,8 +97,8 @@ final GoRouter router = GoRouter(
       branches: <StatefulShellBranch>[
         StatefulShellBranch(routes: <RouteBase>[
           GoRoute(
-            path: '/home',
-            builder: (context, state) => const HomePage(),
+              path: '/home',
+              builder: (context, state) => const HomePage(),
           ),
         ]),
         StatefulShellBranch(routes: <RouteBase>[
@@ -99,9 +109,16 @@ final GoRouter router = GoRouter(
                 GoRoute(
                     path: 'detail',
                     builder: (context, state) {
-                      final tripMaster = state.extra as TripMaster;
+                      final data = state.extra as Map<String, dynamic>?;
+                      final tripMaster = data?['trip'] as TripMaster;
+                      final isOwner = data?['isOwner'] as bool;
+                      final isMember = data?['isMember'] as bool;
+                      final isRequested = data?['isRequested'] as bool;
                       return TripDetailPage(
-                        tripDetail: TripDetail.fromTripMaster(tripMaster)!,
+                        trip: tripMaster,
+                        isOwner: isOwner,
+                        isMember: isMember,
+                        isRequested: isRequested,
                       );
                     })
               ]),
@@ -126,6 +143,29 @@ final GoRouter router = GoRouter(
         ]),
       ],
     ),
+    StatefulShellRoute.indexedStack(
+        builder: (BuildContext context, GoRouterState state,
+            StatefulNavigationShell navigationShell) {
+          return Scaffold(
+            appBar: null,
+            backgroundColor: Colors.white,
+            body: navigationShell,
+          );
+        }
+        ,branches: [
+      StatefulShellBranch(routes: <RouteBase>[
+        GoRoute(
+            path: '/post_comments',
+            builder: (context, state) {
+              final data = state.extra as Map<String, dynamic>?;
+              final postMaster = data?['model'] as PostMasterModel?;
+              final likeCallback = data?['like_callback'] as void Function()?;
+              final commentCallback = data?['comment_callback'] as void Function()?;
+              return PostCommentsPage(postMaster!, likeCallback!, commentCallback!);
+            })
+      ]
+      )
+    ])
   ],
 );
 
@@ -178,8 +218,7 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppThemeData(),
           routerConfig: router,
-          builder: Authenticator.builder()
-      ),
+          builder: Authenticator.builder()),
     );
   }
 

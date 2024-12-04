@@ -9,8 +9,9 @@ class PostTextContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final desc = content.trim();
     return ExpandableDescriptionText(
-      description: content,
+      description: desc,
       textStyle: TextStyle(
         fontSize: 13,
         fontFamily: "Source Sans 3",

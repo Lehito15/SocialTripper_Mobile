@@ -4,8 +4,10 @@ import '../../Utilities/Retrievers/icon_retriever.dart';
 
 class SendComponent extends StatelessWidget {
   final String title;
+  final void Function() onSendClick;
 
-  SendComponent({this.title = "Write your comment"});
+
+  SendComponent({this.title = "Write your comment...", required this.onSendClick});
 
   @override
   Widget build(BuildContext context) {
@@ -17,23 +19,26 @@ class SendComponent extends StatelessWidget {
           color: Color(0xffF0F2F5).withOpacity(0.6),
           borderRadius: BorderRadius.circular(15),
         ),
-        child: Row(
-          children: [
-            SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                title,
-                style: TextStyle(
-                  color: Colors.black.withOpacity(0.5),
-                  fontFamily: "Source Sans 3",
+        child: GestureDetector(
+          onTap: onSendClick,
+          child: Row(
+            children: [
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  style: TextStyle(
+                    color: Colors.black.withOpacity(0.5),
+                    fontFamily: "Source Sans 3",
+                  ),
                 ),
               ),
-            ),
-            Opacity(
-              opacity: 0.7,
-              child: IconRetriever().retrieve("send.svg", 16),
-            ),
-          ],
+              Opacity(
+                opacity: 0.7,
+                child: IconRetriever().retrieve("send.svg", 16),
+              ),
+            ],
+          ),
         ),
       ),
     );

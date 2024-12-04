@@ -8,11 +8,15 @@ class Interaction extends StatelessWidget {
   final InteractionType type;
   final int interactionCount;
   final VoidCallback onToggleInteraction; // Callback do informowania o zmianie
+  final double width;
+  final double height;
 
   Interaction({
     required this.type,
     required this.interactionCount,
     required this.onToggleInteraction,
+    this.width = 18,
+    this.height = 18,
   });
 
   @override
@@ -34,8 +38,8 @@ class Interaction extends StatelessWidget {
     // Tworzymy obrazek SVG
     SvgPicture interactionPicture = SvgPicture.asset(
       path,
-      width: 18, // Ustawiamy stałą szerokość i wysokość dla ikony
-      height: 18, // Dzięki temu ikony nie będą się powiększać podczas animacji
+      width: width,
+      height: height,
     );
 
     return GestureDetector(

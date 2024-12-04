@@ -1,13 +1,42 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
-import 'package:social_tripper_mobile/Models/User/current_user.dart';
+
+import '../Services/account_service.dart';
 
 class DataLoadingPage extends StatelessWidget {
+  Future<void> _checkAccountStatus(BuildContext context) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? accountUUID = prefs.getString('account_uuid'); // debug
+
+    try {
+      // Próba pobrania danych o koncie
+      await AccountService().getCurrentAccount();
+
+      // Jeśli dane o koncie udało się pobrać, przechodzimy do /home
+      GoRouter.of(context).go('/home');
+    } catch (e) {
+      // Obsługuje błąd, jeśli wystąpi
+      print('Error while fetching account: $e');
+
+      // Wylogowujemy użytkownika
+      await Amplify.Auth.signOut();
+
+      // Usuwamy zapisane UUID z SharedPreferences
+      await prefs.remove('account_uuid');
+
+      // Pokazujemy komunikat o błędzie
+      ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Wystąpił błąd podczas ładowania danych, wylogowano'))
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<void>(
-      future: _loadUserData(), // Funkcja asynchroniczna, która ładuje dane użytkownika
+      future: _checkAccountStatus(context),
       builder: (context, snapshot) {
         // Jeśli dane są w trakcie ładowania, wyświetlamy ekran ładowania
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -27,33 +56,9 @@ class DataLoadingPage extends StatelessWidget {
           );
         }
 
-        // Kiedy dane są gotowe, przekierowujemy użytkownika na stronę główną
-        if (snapshot.connectionState == ConnectionState.done) {
-          // Używamy GoRouter do przejścia na stronę /home
-          Future.microtask(() {
-            GoRouter.of(context).go('/home'); // Przechodzi na HomePage
-          });
-          return SizedBox(); // Zwracamy pusty widget, bo wszystko odbywa się już w przyszłym kroku
-        }
-
-        return SizedBox(); // Domyślnie nic nie wyświetlamy
+        // Domyślnie zwracamy pusty widget
+        return SizedBox();
       },
     );
-  }
-
-  // Funkcja asynchroniczna do pobierania danych użytkownika
-  Future<void> _loadUserData() async {
-    try {
-      // Przykładowe pobranie danych użytkownika (np. z AWS Amplify)
-      final user = await Amplify.Auth.getCurrentUser();
-      final userAttributes = await Amplify.Auth.fetchUserAttributes();
-      print("User is logged in: ${user.username}");
-      print("User attributes: $userAttributes");
-      CurrentUser.email = userAttributes[0].value;
-      print("Email uzytkownika to: ${CurrentUser.email}");
-    } catch (e) {
-      print("Error getting user data: $e");
-      throw e; // Jeśli wystąpi błąd, rzucamy go dalej
-    }
   }
 }

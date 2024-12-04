@@ -7,9 +7,9 @@ import '../../Shared/send_component.dart';
 
 class PostMasterBottom extends StatelessWidget {
   final String profilePictureURI;
+  final void Function() onSendClick;
 
-
-  PostMasterBottom(this.profilePictureURI);
+  PostMasterBottom(this.profilePictureURI, this.onSendClick,);
 
   @override
   Widget build(BuildContext context) {
@@ -17,7 +17,7 @@ class PostMasterBottom extends StatelessWidget {
       children: [
         BorderedUserPicture(radius: 26, pictureURI: profilePictureURI),
         SizedBox(width: 9),
-        SendComponent(),
+        SendComponent(onSendClick: onSendClick),
       ],
     );
   }
