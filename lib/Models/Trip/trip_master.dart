@@ -15,7 +15,6 @@ class TripMaster {
   DateTime eventStartTime;
   DateTime eventEndTime;
   int numberOfParticipants;
-  int actualNumberOfParticipants;
   int maxNumberOfParticipants;
   double startLongitude;
   double startLatitude;
@@ -40,7 +39,6 @@ class TripMaster {
       this.eventStartTime,
       this.eventEndTime,
       this.numberOfParticipants,
-      this.actualNumberOfParticipants,
       this.maxNumberOfParticipants,
       this.startLongitude,
       this.startLatitude,
@@ -57,67 +55,66 @@ class TripMaster {
 
   factory TripMaster.fromJson(Map<String, dynamic> json) {
     try {
-      print("Parsing TripMaster from JSON: $json");
+      // Przypisywanie zmiennych i drukowanie
+      final uuid = json['uuid'];
+      final name = json['name'];
+      final destination = json['destination'];
+      final description = json['description'];
+      final rules = json['rules'];
+      final isPublic = json['isPublic'];
+      final dateOfCreation = DateTime.parse(json['dateOfCreation']);
+      final eventStartTime = DateTime.parse(json['eventStartTime']);
+      final eventEndTime = DateTime.parse(json['eventEndTime']);
+      final numberOfParticipants = json['numberOfParticipants'];
+      final maxNumberOfParticipants = json['maxNumberOfParticipants'];
+      final startLongitude = json['startLongitude'];
+      final startLatitude = json['startLatitude'];
+      final stopLongitude = json['stopLongitude'];
+      final stopLatitude = json['stopLatitude'];
+      final destinationLongitude = json['destinationLongitude'];
+      final destinationLatitude = json['destinationLatitude'];
+      final homePageUrl = json['homePageUrl'];
 
-      // Debugowanie wszystkich pól w JSON
-      print('UUID: ${json['uuid']}');
-      print('Name: ${json['name']}');
-      print('Destination: ${json['destination']}');
-      print('Description: ${json['description']}');
-      print('Rules: ${json['rules']}');
-      print('isPublic: ${json['isPublic']}');
-      print('Date of Creation: ${json['dateOfCreation']}');
-      print('Event Start Time: ${json['eventStartTime']}');
-      print('Event End Time: ${json['eventEndTime']}');
-      print('Number of Participants: ${json['numberOfParticipants']}');
-      print('Actual Number of Participants: ${json['actualNumberOfParticipants']}');
-      print('Max Number of Participants: ${json['maxNumberOfParticipants']}');
-      print('Start Longitude: ${json['startLongitude']}');
-      print('Start Latitude: ${json['startLatitude']}');
-      print('Stop Longitude: ${json['stopLongitude']}');
-      print('Stop Latitude: ${json['stopLatitude']}');
-      print('Destination Longitude: ${json['destinationLongitude']}');
-      print('Destination Latitude: ${json['destinationLatitude']}');
-      print('HomePageUrl: ${json['homePageUrl']}');
-      print('Event Status: ${json['eventStatus']}');
-      print('Owner: ${json['owner']}');
-      print('Icon Url: ${json['iconUrl']}');
-      print('Activities: ${json['activities']}');
-      print('Languages: ${json['languages']}');
+      final eventStatus = TripStatus.fromJson(json['eventStatus']);
 
+      final owner = AccountThumbnail.fromJson(json['owner']);
+
+      final iconUrl = json['iconUrl'];
+      final activities = (json['activities'] as List).map((activityJson) {
+        final activity = RequiredActivity.fromJson(activityJson);
+        return activity;
+      }).toSet();
+
+      final languages = (json['languages'] as List).map((languageJson) {
+        final language = RequiredLanguage.fromJson(languageJson);
+        return language;
+      }).toSet();
+
+      // Konstruktor z przetestowanymi zmiennymi
       return TripMaster(
-        json['uuid'],
-        json['name'],
-        json['destination'],
-        json['description'],  // Dodano dla zgodności z backendem
-        json['rules'],
-        json['isPublic'],
-        DateTime.parse(json['dateOfCreation']),
-        DateTime.parse(json['eventStartTime']),
-        DateTime.parse(json['eventEndTime']),
-        json['numberOfParticipants'],
-        json['actualNumberOfParticipants'],
-        json['maxNumberOfParticipants'],
-        json['startLongitude'],
-        json['startLatitude'],
-        json['stopLongitude'],
-        json['stopLatitude'],
-        json['destinationLongitude'],
-        json['destinationLatitude'],
-        json['homePageUrl'],
-        TripStatus.fromJson(json['eventStatus']),
-        AccountThumbnail.fromJson(json['owner']),
-        json['iconUrl'],
-        // Parsowanie activities
-        (json['activities'] as List).map((activityJson) {
-          print('Parsing activity: $activityJson');
-          return RequiredActivity.fromJson(activityJson);
-        }).toSet(),
-        // Parsowanie languages
-        (json['languages'] as List).map((languageJson) {
-          print('Parsing language: $languageJson');
-          return RequiredLanguage.fromJson(languageJson);
-        }).toSet(),
+        uuid,
+        name,
+        destination,
+        description,
+        rules,
+        isPublic,
+        dateOfCreation,
+        eventStartTime,
+        eventEndTime,
+        numberOfParticipants,
+        maxNumberOfParticipants,
+        startLongitude,
+        startLatitude,
+        stopLongitude,
+        stopLatitude,
+        destinationLongitude,
+        destinationLatitude,
+        homePageUrl,
+        eventStatus,
+        owner,
+        iconUrl,
+        activities,
+        languages,
       );
     } catch (e) {
       print('Error during parsing: $e');
@@ -136,7 +133,6 @@ class TripMaster {
       'eventStartTime': eventStartTime.toIso8601String(),
       'eventEndTime': eventEndTime.toIso8601String(),
       'numberOfParticipants': numberOfParticipants,
-      'actualNumberOfParticipants': actualNumberOfParticipants,
       'maxNumberOfParticipants': maxNumberOfParticipants,
       'startLongitude': startLongitude,
       'startLatitude': startLatitude,

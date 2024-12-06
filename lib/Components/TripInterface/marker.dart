@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'video.dart';
 
 class CustomMarker extends StatelessWidget {
@@ -8,6 +9,9 @@ class CustomMarker extends StatelessWidget {
   final Uint8List? thumbnail;
 
   const CustomMarker({super.key, required this.mediaPath, required this.thumbnail});
+
+  String get getMediaPath => mediaPath;
+  Uint8List? get getThumbnail => thumbnail;
 
   void _showMedia(BuildContext context) {
     if (mediaPath.endsWith('.jpg') || mediaPath.endsWith('.png')) {
@@ -18,7 +22,7 @@ class CustomMarker extends StatelessWidget {
           minScale: 1,
           maxScale: 2.5,
           child: GestureDetector(
-            onTap: () => Navigator.of(context).pop(),
+            onTap: () => GoRouter.of(context).pop(),
             child: Image.file(File(mediaPath)),
           ),
         ),

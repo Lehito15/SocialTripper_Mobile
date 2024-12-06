@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
@@ -8,15 +9,28 @@ import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:get_thumbnail_video/index.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
+import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:sensors_plus/sensors_plus.dart';
+import 'package:social_tripper_mobile/Components/BottomNavigation/bottom_navigation.dart';
+import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
+import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
+import 'package:social_tripper_mobile/Models/Trip/trip_multimedia.dart';
+import 'package:social_tripper_mobile/Models/Trip/trip_status.dart';
+import 'package:social_tripper_mobile/Services/account_service.dart';
+import 'package:social_tripper_mobile/Services/post_service.dart';
+import 'package:social_tripper_mobile/Services/trip_service.dart';
 import '../Components/TripInterface/camera.dart';
 import '../Components/TripInterface/marker.dart';
 import '../Utilities/Tasks/location_task.dart';
 
 
 class TripInterface extends StatefulWidget {
-  const TripInterface({super.key});
+  final String tripUUID;
+  final bool isOwner;
+
+  const TripInterface(
+      {required this.tripUUID, required this.isOwner, super.key});
 
   @override
   State<TripInterface> createState() => _TripInterfaceState();
@@ -320,9 +334,10 @@ class _TripInterfaceState extends State<TripInterface> {
               padding: const EdgeInsets.all(8.0),
               child: Column(
                 children: [
+                  Text(widget.tripUUID),
+                  Text("${widget.isOwner}"),
                   //debugLocationComponent(locationMessage),
                   if (_isStartButtonVisible)
-                    // wyekstrachowac do komponentow
                     ElevatedButton(
                       onPressed: () {
                         // takie rzeczy na pewno wyekstrahować do osobnych metod
@@ -354,6 +369,42 @@ class _TripInterfaceState extends State<TripInterface> {
                             color: Color(0xffBDF271)
                         ),
                       ),
+                    )
+                  else
+                    ElevatedButton(
+                      onPressed: () {
+                        print("hello");
+                        print(widget.tripUUID);
+                        Future.wait(markers.map((m) async {
+                          final v = m.child as CustomMarker;
+                          final TripService tripService = TripService();
+                          final userUUID = await AccountService().getSavedAccountUUID();
+                          String path = v.getMediaPath;
+                          TripMultimedia metadata = TripMultimedia(v.getMediaPath, m.point.latitude, m.point.longitude, DateTime.now(), userUUID!, widget.tripUUID);
+                          String metadataJson = jsonEncode(metadata);
+                          try {
+                            await tripService.uploadEventMultimedia(path, metadataJson);
+                          } catch (e) {
+                            print("Error uploading multimedia: $e");
+                          }
+                        })
+                        );
+                        print("done");
+                        final TripService tripService = TripService();
+                        tripService.setTripStatus(widget.tripUUID, TripStatus("finished"));
+                        context.go("/home");
+                      },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.black,
+                        ),
+                        child: const Text(
+                          "End the trip",
+                          style: TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xffBDF271)
+                          ),
+                        ),
                     ),
                 ],
               ),

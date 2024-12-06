@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_author.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
 import 'package:social_tripper_mobile/Services/account_service.dart';
@@ -106,6 +108,124 @@ class PostService {
       return false; // Obsługa błędów
     } finally {
       client.close();
+    }
+  }
+
+
+  Future<List<PostMasterModel>> getPostsForTrip(String tripUUID) async {
+    final url = "$baseUrl/events/$tripUUID/posts";
+
+    try {
+      final response = await http.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        List<dynamic> data = json.decode(response.body);
+        return data.map((item) => PostMasterModel.fromJson(item)).toList();
+      } else {
+        throw Exception('Failed to load posts');
+      }
+    } catch (e) {
+      throw Exception('Error: $e');
+    }
+  }
+
+  Future<List<PostMasterModel>> loadAllPosts() async {
+    String? currentUserUUID = await AccountService().getSavedAccountUUID();
+    var client = http.Client();
+    List<PostMasterModel> posts = [];
+
+    try {
+      var response = await client.get(Uri.parse('$baseUrl/posts'));
+      if (response.statusCode == 200) {
+
+        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
+
+        if (decodedResponse is List) {
+
+          for (var post in decodedResponse) {
+            PostMasterModel masterModel = PostMasterModel.fromJson(post);
+            await _setLikeStatus(masterModel, currentUserUUID);
+            posts.add(masterModel);
+          }
+        } else {
+          print('Odpowiedź nie jest listą!');
+        }
+      } else {
+        print('Failed to load posts: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    } finally {
+      client.close();
+    }
+    return posts.reversed.toList();
+  }
+
+  Stream<List<PostMasterModel>> loadAllPostsStream() async* {
+    String? currentUserUUID = await AccountService().getSavedAccountUUID();
+    var client = http.Client();
+    List<PostMasterModel> posts = [];
+
+    try {
+      var response = await client.get(Uri.parse('$baseUrl/posts'));
+      if (response.statusCode == 200) {
+        print("got response");
+        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
+
+        if (decodedResponse is List) {
+          for (var post in decodedResponse) {
+            PostMasterModel masterModel = PostMasterModel.fromJson(post);
+            await _setLikeStatus(masterModel, currentUserUUID);
+            posts.add(masterModel); // Dodajemy do listy
+            yield posts; // Emitujemy całą listę, ale tylko raz na iterację
+          }
+        } else {
+          print('Odpowiedź nie jest listą!');
+        }
+      } else {
+        print('Failed to load posts: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    } finally {
+      client.close();
+    }
+  }
+
+  Future<void> _setLikeStatus(PostMasterModel model, String? currentUserUUID) async {
+    bool isLiked = await PostService().didUserReactToPost(currentUserUUID ?? "", model.uuid);
+    model.isLiked = isLiked;
+  }
+
+
+  Future<PostMasterModel> createPersonalPost(PostMasterModel postDTO, List<File>? multimediaFiles) async {
+    Dio dio = Dio();
+    final apiUrl = "$baseUrl";
+    try {
+      // Tworzymy dane do wysłania w formacie multipart/form-data
+      FormData formData = FormData.fromMap({
+        'postDTO': jsonEncode(postDTO.toJson()), // Przesyłamy dane postDTO jako JSON
+        if (multimediaFiles != null && multimediaFiles.isNotEmpty) ...{
+          'multimedia': await Future.wait(multimediaFiles.map((file) async {
+            return await MultipartFile.fromFile(file.path, filename: file.uri.pathSegments.last, contentType: MediaType("png", "jpeg"));
+          })),
+        }
+      });
+
+      // Wysyłamy POST request na endpoint "/posts"
+      Response response = await dio.post('$apiUrl/posts', data: formData);
+
+      // Sprawdzamy, czy odpowiedź była poprawna
+      if (response.statusCode == HttpStatus.created) {
+        // Zwracamy odpowiedź z serwera jako obiekt PostDTO
+        return PostMasterModel.fromJson(response.data);
+      } else {
+        print('Request failed with status: ${response.statusCode}');
+        throw Exception('Failed to create post');
+      }
+    } catch (e) {
+      print('Error creating post: $e');
+      throw Exception('Error creating post');
     }
   }
 

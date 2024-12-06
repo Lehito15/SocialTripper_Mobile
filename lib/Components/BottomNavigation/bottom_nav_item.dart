@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/svg.dart';
 
 GestureDetector BottomNavItem(String name, String iconPath, String type, bool isActive, VoidCallback onTap) {
-  print(isActive);
   return GestureDetector(
     onTap: onTap,
     child: Column(

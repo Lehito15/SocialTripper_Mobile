@@ -26,19 +26,9 @@ class TripPageBuildConfig {
       return const Center(child: Text("Error loading trip"));
     }
 
-    Widget clickableTrip = GestureDetector(
-      onTap: () async {
-        String? loggedUserUUID = await AccountService().getSavedAccountUUID();
-        bool? isMember = await TripService().isTripMember(trip.uuid, loggedUserUUID!);
-        bool? isRequested = await TripService().isTripRequested(trip.uuid, loggedUserUUID!);
-        context.push('/trips/detail', extra: {
-          'trip': trip,
-          'isOwner': loggedUserUUID == trip.owner.uuid,
-          'isMember' : isMember,
-          'isRequested': isRequested
-        });
-      },
-      child: TripMasterView(trip),
+
+    Widget clickableTrip = Container(
+      child: TripMasterView(trip: trip),
     );
 
     return Padding(

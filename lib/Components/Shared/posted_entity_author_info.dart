@@ -3,10 +3,16 @@ import 'package:flutter/material.dart';
 class PostedEntityAuthorTextInfo extends StatelessWidget {
   final String topString;
   final String bottomString;
+  final double spacing;
+  final double topSize;
+  final double bottomSize;
 
   PostedEntityAuthorTextInfo({
     required this.topString,
     required this.bottomString,
+    this.spacing = 2,
+    this.topSize = 15,
+    this.bottomSize = 10,
   });
 
   @override
@@ -21,17 +27,17 @@ class PostedEntityAuthorTextInfo extends StatelessWidget {
               height: 1,
               fontFamily: "Source Sans 3",
               fontWeight: FontWeight.w600,
-              fontSize: 15,
+              fontSize: topSize,
             ),
           ),
-          SizedBox(height: 2),
+          SizedBox(height: spacing),
           Text(
             bottomString,
             style: TextStyle(
               height: 1,
               fontFamily: "Source Sans 3",
               fontWeight: FontWeight.w600,
-              fontSize: 10,
+              fontSize: bottomSize,
               color: Colors.black.withOpacity(0.55),
             ),
           ),

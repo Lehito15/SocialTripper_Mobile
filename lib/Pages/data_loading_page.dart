@@ -1,18 +1,25 @@
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
+import 'package:social_tripper_mobile/VM/app_viewmodel.dart';
 
 import '../Services/account_service.dart';
 
 class DataLoadingPage extends StatelessWidget {
   Future<void> _checkAccountStatus(BuildContext context) async {
+    AccountService service = AccountService();
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? accountUUID = prefs.getString('account_uuid'); // debug
+    await service.getCurrentAccount();
 
     try {
-      // Próba pobrania danych o koncie
-      await AccountService().getCurrentAccount();
+      AppViewModel appViewModel =
+      Provider.of<AppViewModel>(context, listen: false);
+      print("przed chekiem");
+      await appViewModel.checkActiveTrip();
+      print("checking active trip");
+
 
       // Jeśli dane o koncie udało się pobrać, przechodzimy do /home
       GoRouter.of(context).go('/home');

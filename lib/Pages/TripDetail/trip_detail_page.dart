@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:provider/provider.dart';
 import 'package:social_tripper_mobile/Components/Shared/language_master.dart';
 import 'package:social_tripper_mobile/Components/Shared/profile_thumbnail.dart';
 import 'package:social_tripper_mobile/Components/Shared/titled_section_small.dart';
@@ -13,10 +14,16 @@ import 'package:social_tripper_mobile/Components/TripMaster/BuildingBlocks/trip_
 import 'package:social_tripper_mobile/Models/Account/account_thumbnail.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_status.dart';
+import 'package:social_tripper_mobile/Models/Trip/user_trip_request.dart';
+import 'package:social_tripper_mobile/Pages/TripDetail/Subpages/trip_detail_posts.dart';
+import 'package:social_tripper_mobile/Pages/TripDetail/Subpages/trip_detail_requests.dart';
+import 'package:social_tripper_mobile/Services/account_service.dart';
+import 'package:social_tripper_mobile/Services/post_service.dart';
 import 'package:social_tripper_mobile/Services/trip_service.dart';
 import 'package:social_tripper_mobile/Utilities/Converters/date_converter.dart';
 import 'package:social_tripper_mobile/Utilities/Retrievers/activity_retriever.dart';
 import 'package:social_tripper_mobile/Utilities/Retrievers/flag_retriever.dart';
+import 'package:social_tripper_mobile/VM/app_viewmodel.dart';
 import '../../Components/Shared/titled_section_medium_bordered.dart';
 import 'Subpages/trip_detail_details.dart';
 import 'Subpages/trip_detail_information.dart';
@@ -27,13 +34,15 @@ class TripDetailPage extends StatefulWidget {
   final bool isOwner;
   final bool isMember;
   final bool isRequested;
+  final void Function() onLeaveTrip;
 
   const TripDetailPage(
       {super.key,
       required this.trip,
       required this.isOwner,
       required this.isMember,
-      required this.isRequested}); // Nowy konstruktor
+      required this.isRequested,
+      required this.onLeaveTrip}); // Nowy konstruktor
 
   @override
   State<TripDetailPage> createState() => _TripDetailPageState();
@@ -43,6 +52,10 @@ class _TripDetailPageState extends State<TripDetailPage> {
   late final TripMaster _trip;
   late int activePage;
   late Future<List<AccountThumbnail>> members;
+  late bool isOwner;
+  late bool isMember;
+  late bool isRequested;
+  late int numberOfParticipants;
 
   @override
   void initState() {
@@ -51,7 +64,23 @@ class _TripDetailPageState extends State<TripDetailPage> {
     members = TripService().getEventMembers(widget.trip.uuid);
     setState(() {
       activePage = 0;
+      isOwner = widget.isOwner;
+      isMember = widget.isMember;
+      isRequested = widget.isRequested;
+      numberOfParticipants = widget.trip.numberOfParticipants;
     });
+  }
+
+  void _onAccept() {
+    setState(() {
+      numberOfParticipants ++;
+    });
+  }
+
+  void _onDecline() {
+      setState(() {
+
+      });
   }
 
   Widget buildSubsite() {
@@ -60,10 +89,18 @@ class _TripDetailPageState extends State<TripDetailPage> {
         return Information(_trip);
       case 1:
         return Details(_trip, context);
+      case 2:
+        return Posts(_trip, PostService().getPostsForTrip(_trip.uuid));
       case 3:
         return Members(
           _trip.owner,
           members,
+        );
+      case 4:
+        return Requests(_trip, TripService().getTripRequests(_trip.uuid), _onAccept, _onDecline);
+      case 5:
+        return Container(
+          child: Text("summary"),
         );
       default:
         return Container();
@@ -72,9 +109,11 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
   @override
   Widget build(BuildContext context) {
+    AppViewModel appViewModel =
+        Provider.of<AppViewModel>(context, listen: false);
     return ListView(
       children: [
-        TripDetailCore(),
+        TripDetailCore(appViewModel, _trip.eventStatus),
         SizedBox(
           height: 9,
         ),
@@ -83,7 +122,18 @@ class _TripDetailPageState extends State<TripDetailPage> {
     );
   }
 
-  Container TripDetailCore() {
+  Container TripDetailCore(AppViewModel appViewModel, TripStatus status) {
+    List<Widget> options = [
+      OptionsElements("Information", 0),
+      OptionsElements("Details", 1),
+      OptionsElements("Posts", 2),
+      OptionsElements("Members", 3),
+      (isOwner && status.status == "created")
+          ? OptionsElements("Requests", 4)
+          : (status.status == "finished"
+              ? OptionsElements("Summary", 5)
+              : Container()),
+    ];
     return Container(
       color: Colors.white,
       child: Column(
@@ -100,7 +150,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TripDetailBasicInfo(_trip.name, _trip.numberOfParticipants),
+                    TripDetailBasicInfo(_trip.name),
                     SizedBox(
                       width: 22,
                     ),
@@ -119,13 +169,15 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 SizedBox(
                   height: 18,
                 ),
-                TripDetailOwnerOptionsBar(_trip.owner, _trip.eventStatus,
-                    widget.isOwner, widget.isMember, widget.isRequested),
+                TripDetailOwnerOptionsBar(_trip.owner, _trip.eventStatus),
                 SizedBox(
                   height: 24,
                 ),
                 TripDetailBottom(
-                    _trip.numberOfParticipants, _trip.maxNumberOfParticipants),
+                  numberOfParticipants,
+                  _trip.maxNumberOfParticipants,
+                  appViewModel,
+                ),
                 SizedBox(
                   height: 9,
                 ),
@@ -136,13 +188,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
             padding: const EdgeInsets.symmetric(horizontal: 9),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                OptionsElements("Information", 0),
-                OptionsElements("Details", 1),
-                OptionsElements("Posts", 2),
-                OptionsElements("Members", 3),
-                OptionsElements("Requests", 4),
-              ],
+              children: options,
             ),
           )
         ],
@@ -182,7 +228,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
     );
   }
 
-  Flexible TripDetailBasicInfo(String name, int numParticipants) {
+  Flexible TripDetailBasicInfo(String name) {
     return Flexible(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -193,16 +239,20 @@ class _TripDetailPageState extends State<TripDetailPage> {
           SizedBox(
             height: 3,
           ),
-          MembersInfoText(numParticipants),
+          MembersInfoText(numberOfParticipants),
         ],
       ),
     );
   }
 
-  Row TripDetailBottom(int numParticipants, int maxNumParticipants) {
+  Row TripDetailBottom(
+      int numParticipants, int maxNumParticipants, AppViewModel appViewModel) {
     return Row(
       children: [
-        Expanded(child: widget.isOwner ? StartTheTripButton() : Container()),
+        Expanded(
+            child: (widget.isOwner)
+                ? ManageTheTripButton(appViewModel, _trip.eventStatus)
+                : Container()),
         TripMembers(
             currentMembers: numParticipants,
             maxMembers: maxNumParticipants,
@@ -212,10 +262,33 @@ class _TripDetailPageState extends State<TripDetailPage> {
     );
   }
 
-  GestureDetector StartTheTripButton() {
+  Widget ManageTheTripButton(AppViewModel appViewModel, TripStatus status) {
+    String displayText = "";
+    print(status.status);
+
+    switch (status.status) {
+      case "created":
+        displayText = "Start the trip!";
+        break;
+      case "in progress":
+        displayText = "Finish the trip";
+        break;
+      case "finished":
+        displayText = "Share relation!";
+        break;
+    }
     return GestureDetector(
       onTap: () {
-        print("Start the trip clicked");
+        switch (status.status) {
+          case "created":
+            _showStartTheTripDialog(context, appViewModel);
+            break;
+          case "in progress":
+            _showEndTheTripDialog(context, appViewModel);
+            break;
+          case "finished":
+            _showShareRelationDialog(context, appViewModel);
+        }
       },
       child: Row(
         children: [
@@ -237,7 +310,7 @@ class _TripDetailPageState extends State<TripDetailPage> {
                   width: 9,
                 ),
                 Text(
-                  "Start the trip!",
+                  displayText,
                   style: TextStyle(
                     color: Color(0xffBDF271),
                     fontSize: 12,
@@ -255,9 +328,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
   Row TripDetailOwnerOptionsBar(
     AccountThumbnail tripOwner,
     TripStatus status,
-    bool isOwner,
-    bool isMember,
-    bool isRequested,
   ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -270,9 +340,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 profilePictureUrl: tripOwner.profilePictureUrl),
           ),
         ),
-        isMember
-            ? MenuButton("assets/icons/plus_sign_black.svg", "Invite", () {})
-            : Container(),
         SizedBox(
           width: 9,
         ),
@@ -283,15 +350,52 @@ class _TripDetailPageState extends State<TripDetailPage> {
           width: 9,
         ),
         isMember
-            ? MenuButton("assets/icons/three-dots-svgrepo-com.svg", null, () {})
+            ? Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFFF0F2F5),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: PopupMenuButton(
+                  child: MenuButtonPassive(
+                      "assets/icons/three-dots-svgrepo-com.svg", ""),
+                  itemBuilder: (BuildContext context) => <PopupMenuEntry<int>>[
+                    PopupMenuItem<int>(
+                      value: 0,
+                      child: Text('Leave Trip'),
+                      onTap: () async {
+                        String? userUUID =
+                            await AccountService().getSavedAccountUUID();
+                        UserTripRequest request =
+                            UserTripRequest(userUUID!, _trip.uuid, "bye");
+                        await TripService().userLeaveEvent(request);
+                        widget.onLeaveTrip();
+                        setState(() {
+                          isMember = false;
+                          numberOfParticipants = _trip.numberOfParticipants;
+                        });
+                      },
+                    ),
+                  ],
+                ),
+              )
             : Container(),
-        !isMember
+        !isMember && _trip.eventStatus.status == "created"
             ? (!isRequested
-                ? MenuButton("assets/icons/group.svg", "Request join", () {
-                    print("requested");
+                ? MenuButton("assets/icons/group.svg", "Request join",
+                    () async {
+                    setState(() {
+                      isRequested = true;
+                    });
+                    String? userUUID =
+                        await AccountService().getSavedAccountUUID();
+                    UserTripRequest request =
+                        UserTripRequest(userUUID!, _trip.uuid, "hello");
+                    TripService().userApplyForTrip(request);
                   })
                 : MenuButton("assets/icons/group.svg", "Request pending", () {
-                    print("requested");
+                    setState(() {
+                      // isRequested = false;
+                    });
                   }))
             : Container()
       ],
@@ -330,6 +434,38 @@ class _TripDetailPageState extends State<TripDetailPage> {
                 : Container(),
           ],
         ),
+      ),
+    );
+  }
+
+  Widget MenuButtonPassive(String iconPath, String? text) {
+    return Container(
+      height: 26,
+      padding: EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        color: Color(0xFFF0F2F5),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 14,
+            height: 14,
+            child: SvgPicture.asset(iconPath),
+          ),
+          text != null
+              ? Row(
+                  children: [
+                    SizedBox(width: 7),
+                    Text(
+                      text,
+                      style:
+                          TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+                    ),
+                  ],
+                )
+              : Container(),
+        ],
       ),
     );
   }
@@ -402,5 +538,121 @@ class _TripDetailPageState extends State<TripDetailPage> {
             ),
     );
     ;
+  }
+
+  void _showStartTheTripDialog(
+      BuildContext context, AppViewModel appViewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Are you sure?'),
+          content: Text('Do you really want start the trip?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                TripStatus status = TripStatus("in progress");
+                await TripService().setTripStatus(_trip.uuid, status);
+                setState(() {
+                  _trip.eventStatus = status;
+                });
+                appViewModel.checkActiveTrip();
+                Navigator.of(context).pop();
+              },
+              child: DialogOption("Yes", true),
+            ),
+            //F0F2F5
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+              },
+              child: DialogOption("No", false),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+  void _showShareRelationDialog(
+      BuildContext context, AppViewModel appViewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Are you sure?'),
+          content: Text('Do you really want to share the relation?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                TripStatus status = TripStatus("created");
+                await TripService().setTripStatus(_trip.uuid, status);
+                setState(() {
+                  _trip.eventStatus = status;
+                });
+                appViewModel.checkActiveTrip();
+                Navigator.of(context).pop();
+              },
+              child: DialogOption("Yes", true),
+            ),
+            //F0F2F5
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+              },
+              child: DialogOption("No", false),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showEndTheTripDialog(BuildContext context, AppViewModel appViewModel) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Are you sure?'),
+          content: Text('Do you really want end the trip?'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () async {
+                TripStatus status = TripStatus("finished");
+                await TripService().setTripStatus(_trip.uuid, status);
+                setState(() {
+                  _trip.eventStatus = status;
+                });
+                appViewModel.checkActiveTrip();
+                Navigator.of(context).pop();
+              },
+              child: DialogOption("Yes", true),
+            ),
+            //F0F2F5
+            TextButton(
+              onPressed: () async {
+                Navigator.of(context).pop();
+              },
+              child: DialogOption("No", false),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Container DialogOption(String text, bool positive) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: 6, horizontal: 16),
+      decoration: BoxDecoration(
+        color: positive ? Colors.black : Color(0xFFF0F2F5),
+        borderRadius: BorderRadius.circular(100),
+      ),
+      child: Text(
+        text,
+        style: TextStyle(color: positive ? Color(0xffBDF271) : Colors.black),
+      ),
+    );
   }
 }

@@ -17,7 +17,6 @@ class TripRepository {
     try {
       var response = await client.get(Uri.parse('$baseUrl/events'));
       if (response.statusCode == 200) {
-        print('Response body: ${response.body}');
 
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
 

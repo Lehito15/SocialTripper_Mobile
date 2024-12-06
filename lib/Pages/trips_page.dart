@@ -3,6 +3,7 @@ import 'dart:isolate';
 import 'package:flutter/material.dart';
 import 'package:social_tripper_mobile/Pages/config/scrolling_treshholds.dart';
 import 'package:social_tripper_mobile/Repositories/trip_repository.dart';
+import 'package:social_tripper_mobile/Services/trip_service.dart';
 
 import '../Models/Trip/trip_master.dart';
 import 'config/data_retrieving_config.dart';
@@ -20,7 +21,7 @@ class TripsPage extends StatefulWidget {
 class _TripsPageState extends State<TripsPage> {
   final ScrollController _scrollController = ScrollController();
 
-  late GenericContentPage<TripMaster> content;
+  late GenericContentPage2<TripMaster> content;
 
 
   Future<void> placeholderOnRefresh() async {
@@ -30,19 +31,24 @@ class _TripsPageState extends State<TripsPage> {
   @override
   void initState() {
     super.initState();
-    content = GenericContentPage(
-      onRefresh: DataRetrievingConfig.source == Source.BACKEND ? TripRepository.initialize : placeholderOnRefresh,
-      scrollTresholdFunction: getLinearThreshold,
-      precachingStrategy: TripPageBuildConfig.cachingStrategy,
-      retrieveContent: TripPageBuildConfig.retrieveBackendElement,
+    TripService service = TripService();
+    // content = GenericContentPage(
+    //   onRefresh: TripRepository.initialize,
+    //   scrollTresholdFunction: getLinearThreshold,
+    //   precachingStrategy: TripPageBuildConfig.cachingStrategy,
+    //   retrieveContent: TripPageBuildConfig.retrieveBackendElement,
+    //   buildItem: TripPageBuildConfig.buildItem,
+    //   scrollController: _scrollController,
+    // );
+    print("tripa");
+    content = GenericContentPage2(retrieveContent: service.loadAllTripsStream,
       buildItem: TripPageBuildConfig.buildItem,
-      scrollController: _scrollController,
+      precachingStrategy: TripPageBuildConfig.cachingStrategy,
     );
   }
 
   void scrollToTop() {
-    if (_scrollController.position.pixels == 0) {
-    } else {
+    if (_scrollController.position.pixels == 0) {} else {
       _scrollController.animateTo(
         0,
         duration: const Duration(milliseconds: 300),

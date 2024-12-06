@@ -7,6 +7,7 @@ import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Pages/config/post_page_build_config.dart';
 import 'package:social_tripper_mobile/Pages/config/scrolling_treshholds.dart';
 import 'package:social_tripper_mobile/Repositories/post_repository.dart';
+import 'package:social_tripper_mobile/Services/post_service.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/Post/post_generator.dart';
 import 'package:social_tripper_mobile/Utilities/DataGenerators/system_entity_photo_generator.dart';
 import '../Components/Post/post_master.dart';
@@ -20,24 +21,29 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  late GenericContentPage<PostMasterModel> content;
+  late GenericContentPage2<PostMasterModel> content;
   final ScrollController _scrollController = ScrollController();
 
   Future<void> placeholderOnRefresh() async {
     await Future.value(0);
   }
 
-
   @override
   void initState() {
+    PostService service = PostService();
     super.initState();
-    content = GenericContentPage(
-      onRefresh: DataRetrievingConfig.source == Source.BACKEND ? PostRepository.initialize : placeholderOnRefresh,
-      scrollTresholdFunction: getLinearThreshold,
-      precachingStrategy: PostPageBuildConfig.cachingStrategy,
-      retrieveContent: PostPageBuildConfig.retrieveBackendElement,
+    // content = GenericContentPage(
+    //   onRefresh: PostRepository.initialize,
+    //   scrollTresholdFunction: getLinearThreshold,
+    //   precachingStrategy: PostPageBuildConfig.cachingStrategy,
+    //   retrieveContent: PostPageBuildConfig.retrieveBackendElement,
+    //   buildItem: PostPageBuildConfig.buildItem,
+    //   scrollController: _scrollController,
+    // );
+    content = GenericContentPage2(
+      retrieveContent: service.loadAllPostsStream,
       buildItem: PostPageBuildConfig.buildItem,
-      scrollController: _scrollController,
+      precachingStrategy: PostPageBuildConfig.cachingStrategy,
     );
   }
 

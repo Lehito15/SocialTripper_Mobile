@@ -1,29 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:provider/provider.dart';
+import 'package:social_tripper_mobile/VM/app_viewmodel.dart';
 import 'bottom_nav_item.dart';
 
 
 class CustomBottomNavBar extends StatefulWidget {
-  final int currentIndex;
 
-  const CustomBottomNavBar({super.key, required this.currentIndex});  // Wymagamy tego parametru
+  const CustomBottomNavBar({super.key});
 
   @override
   State<CustomBottomNavBar> createState() => _CustomBottomNavBarState();
 }
 
 class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
-  // Usuwamy _currentIndex, ponieważ teraz jest przekazywany przez konstruktor
-  late int _currentIndex;
-
   @override
   void initState() {
     super.initState();
-    _currentIndex = widget.currentIndex;  // Ustawiamy indeks z widgetu
   }
 
   @override
   Widget build(BuildContext context) {
+    AppViewModel appViewModel = Provider.of<AppViewModel>(context, listen: false);
     return SafeArea(
       child: Container(
         height: 72,
@@ -46,10 +44,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 "Home",
                 "assets/icons/house_filled_black.png",
                 "png",
-                _currentIndex == 0,  // Indeks dla "Home"
+                appViewModel.currentNavIndex == 0,
                     () {
                   setState(() {
-                    _currentIndex = 0;  // Aktualizuj stan
+                    appViewModel.changeIndex(0);  // Aktualizuj stan
                   });
                   context.go("/home");  // Przejdź do strony Home
                 },
@@ -58,10 +56,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 "Trips",
                 "assets/icons/trip_icon_black.svg",
                 "svg",
-                _currentIndex == 1,  // Indeks dla "Trips"
+                appViewModel.currentNavIndex == 1,
                     () {
                   setState(() {
-                    _currentIndex = 1;  // Aktualizuj stan
+                    appViewModel.changeIndex(1);  // Aktualizuj stan
                   });
                   context.go("/trips");  // Przejdź do strony Trips
                 },
@@ -70,10 +68,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 "Relations",
                 "assets/icons/relacja.svg",
                 "svg",
-                _currentIndex == 2,  // Indeks dla "Relations"
+                appViewModel.currentNavIndex == 2,
                     () {
                   setState(() {
-                    _currentIndex = 2;  // Aktualizuj stan
+                    appViewModel.changeIndex(2);  // Aktualizuj stan
                   });
                   context.go("/relations");  // Przejdź do strony Relations
                 },
@@ -82,10 +80,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 "Groups",
                 "assets/icons/group.svg",
                 "svg",
-                _currentIndex == 3,  // Indeks dla "Groups"
+                appViewModel.currentNavIndex == 3,
                     () {
                   setState(() {
-                    _currentIndex = 3;  // Aktualizuj stan
+                    appViewModel.changeIndex(3);  // Aktualizuj stan
                   });
                   context.go("/groups");  // Przejdź do strony Groups
                 },
@@ -94,10 +92,10 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                 "Explore",
                 "assets/icons/explore.svg",
                 "svg",
-                _currentIndex == 4,  // Indeks dla "Explore"
+                appViewModel.currentNavIndex == 4,
                     () {
                   setState(() {
-                    _currentIndex = 4;  // Aktualizuj stan
+                    appViewModel.changeIndex(4);  // Aktualizuj stan
                   });
                   context.go("/explore");  // Przejdź do strony Explore
                 },

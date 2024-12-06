@@ -5,7 +5,7 @@ class GenericContentPage<T> extends StatefulWidget {
   final Future<void>? Function(T, BuildContext) precachingStrategy;
   final Future<T?> Function() retrieveContent;
   final Widget Function(T, BuildContext) buildItem;
-  Future<void> Function() onRefresh;
+  final Future<void> Function() onRefresh;
   final ScrollController scrollController;
 
   GenericContentPage({
@@ -14,13 +14,9 @@ class GenericContentPage<T> extends StatefulWidget {
     required this.precachingStrategy,
     required this.retrieveContent,
     required this.buildItem,
-    this.onRefresh = _defaultOnRefresh,
+    required this.onRefresh,
     ScrollController? scrollController,
   }) : scrollController = scrollController ?? ScrollController();
-
-  static Future<void> _defaultOnRefresh() {
-    return Future.value(0);
-  }
 
   @override
   State<GenericContentPage<T>> createState() => _GenericContentPageState();
@@ -29,12 +25,9 @@ class GenericContentPage<T> extends StatefulWidget {
 class _GenericContentPageState<T> extends State<GenericContentPage<T>> {
   final List<T> _loadedContent = [];
   late final ScrollController _scrollController = widget.scrollController;
-
-  bool _isLoading = false;
+  bool firstTimeVisit = true;
   bool _isLoadingMore = false;
   bool _isContent = true;
-  final int initialLoadCount = 15;
-  final int incrementLoadCount = 15;
 
   @override
   void initState() {
@@ -42,7 +35,6 @@ class _GenericContentPageState<T> extends State<GenericContentPage<T>> {
     _scrollController.addListener(_scrollListener);
     _loadInitialContent();
   }
-
 
   @override
   void dispose() {
@@ -52,90 +44,41 @@ class _GenericContentPageState<T> extends State<GenericContentPage<T>> {
 
   void _scrollListener() {
     const maxContent = 400;
-
-    double threshold =
-        widget.scrollTresholdFunction(_loadedContent.length, maxContent);
+    double threshold = widget.scrollTresholdFunction(_loadedContent.length, maxContent);
 
     if (_scrollController.position.pixels >=
-            _scrollController.position.maxScrollExtent * (threshold / 100) &&
-        !_isLoading && _isContent) {
+        _scrollController.position.maxScrollExtent * (threshold / 100) &&
+        !_isLoadingMore &&
+        _isContent) {
       _loadMoreContent();
-    }
-  }
-
-
-  Future<void> _precacheImages(List<T> content) async {
-    for (int i = 0; i < content.length; i++) {
-      final T element = content[i];
-      widget.precachingStrategy(element, context);
     }
   }
 
   Future<void> _loadInitialContent() async {
     await widget.onRefresh();
-    _isContent = true;
-    if (_isLoading) return;
-
     setState(() {
-      _isLoading = true;
+      _isLoadingMore = true;
     });
 
-    final List<T> allResults = [];
     final List<T> results = [];
-
-    for (int i = 0; i < 2 && i < initialLoadCount; i++) {
+    for (int i = 0; i < 15; i++) {
       final result = await widget.retrieveContent();
-
-      // Sprawdzamy, czy wynik nie jest null
       if (result != null) {
         results.add(result);
+        print("rez: $result");
       } else {
         _isContent = false;
         break;
       }
     }
 
-    if (results.isNotEmpty) {
-      await _precacheImages(results);
-    }
-
-    // Wczytujemy pozostałe dane
-    if (initialLoadCount > 2 && _isContent) {
-      final futures = List.generate(
-        initialLoadCount - 2,
-            (_) async {
-          final result = await widget.retrieveContent();
-          if (result != null) {
-            return result;
-          } else {
-            print("No content available in the remaining items");
-            _isContent = false;
-            return null;
-          }
-        },
-      );
-
-      final remainingResults = await Future.wait(futures);
-
-      // Dodajemy tylko wyniki, które nie są null
-      results.addAll(remainingResults.where((item) => item != null).cast<T>());
-    }
-
-    // Dodajemy dane do ogólnej listy wyników
-    allResults.addAll(results);
-
-    // Zaktualizuj stan z danymi
+    await _precacheImages(results);
     setState(() {
-      _loadedContent
-        ..clear()
-        ..addAll(allResults);
-      _isLoading = false;
+      _loadedContent.clear();
+      _loadedContent.addAll(results);
+      _isLoadingMore = false;
+      firstTimeVisit = false;
     });
-
-    // Precacheujemy obrazy dla pozostałych wyników
-    if (results.length > 2) {
-      await _precacheImages(results.skip(2).toList());
-    }
   }
 
   Future<void> _loadMoreContent() async {
@@ -145,54 +88,175 @@ class _GenericContentPageState<T> extends State<GenericContentPage<T>> {
       _isLoadingMore = true;
     });
 
-    final List<T> allResults = [];
-
-    // Pobieramy dane, ale jeśli napotkamy null, kończymy pętlę
-    for (int i = 0; i < initialLoadCount; i++) {
+    final List<T> results = [];
+    for (int i = 0; i < 15; i++) {
       final result = await widget.retrieveContent();
-
-      // Jeśli wynik jest null, przerwij pętlę
       if (result == null) {
         _isContent = false;
         break;
       }
-
-      // Jeśli wynik nie jest null, dodajemy go do listy
-      allResults.add(result);
+      results.add(result);
     }
 
-    // Zaktualizuj stan, dodając nowe dane
+    await _precacheImages(results);
     setState(() {
-      _loadedContent.addAll(allResults);
+      _loadedContent.addAll(results);
       _isLoadingMore = false;
-
-      // Precache'owanie obrazów tylko jeśli są dane
-      if (allResults.isNotEmpty) {
-        _precacheImages(allResults);
-      }
     });
+  }
+
+  Future<void> _precacheImages(List<T> content) async {
+    for (var element in content) {
+      await widget.precachingStrategy?.call(element, context);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     return RefreshIndicator(
-        onRefresh: _loadInitialContent,
-        child: _isLoading && _loadedContent.isEmpty
-            ? Center(child: CircularProgressIndicator())
-            : CustomScrollView(
-          shrinkWrap: false,
-          controller: _scrollController,
-          slivers: [
-            SliverList(delegate: SliverChildBuilderDelegate(
-                (context, index) {
-                  if (_isLoadingMore && index == _loadedContent.length) {
-                    return Center(child: CircularProgressIndicator());
-                  }
-                  return widget.buildItem(_loadedContent[index], context);
-                },
-              childCount: _loadedContent.length + (_isLoadingMore ? 1 : 0),
-            ))
-          ],
-        ));
+      onRefresh: () async {
+        print("refresh");
+        await _loadInitialContent();  // Reload content without clearing the list
+      },
+      child: ListView.builder(
+        controller: _scrollController,
+        itemCount: _loadedContent.length + (_isLoadingMore ? 1 : 0),
+        itemBuilder: (context, index) {
+          if (_isLoadingMore && index == _loadedContent.length) {
+            return Center(child: CircularProgressIndicator());
+          }
+          return widget.buildItem(_loadedContent[index], context);
+        },
+      ),
+    );
   }
 }
+
+
+
+class GenericContentPage2<T> extends StatefulWidget {
+  final Stream<List<T>> Function() retrieveContent; // Zmiana na Stream
+  final Widget Function(T, BuildContext) buildItem;
+  final Future<void>? Function(T, BuildContext) precachingStrategy;
+
+  GenericContentPage2({
+    super.key,
+    required this.retrieveContent,
+    required this.buildItem,
+    required this.precachingStrategy,
+  });
+
+  @override
+  _GenericContentPage2State<T> createState() => _GenericContentPage2State<T>();
+}
+
+class _GenericContentPage2State<T> extends State<GenericContentPage2<T>> {
+  late Stream<List<T>> postsStream;
+  List<T> loadedItems = [];  // Przechowywanie danych w stanie
+
+  @override
+  void initState() {
+    super.initState();
+    postsStream = widget.retrieveContent();  // Zmienione na Stream<List<T>>
+  }
+
+  Future<void> _refreshPosts() async {
+    setState(() {
+      loadedItems.clear();
+    });
+    // Odświeżamy dane
+    postsStream = widget.retrieveContent();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return RefreshIndicator(
+      onRefresh: _refreshPosts,
+      child: StreamBuilder<List<T>>(
+        stream: postsStream,  // Słuchamy Stream<List<T>>
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting && loadedItems.isEmpty) {
+            return Center(child: CircularProgressIndicator());
+          } else if (snapshot.hasError) {
+            return Center(child: Text("Error: ${snapshot.error}"));
+          } else if (snapshot.hasData) {
+            // Ładujemy wszystkie elementy na raz
+            loadedItems = snapshot.data!;
+            return ListView.builder(
+              itemCount: loadedItems.length,
+              itemBuilder: (context, index) {
+                return widget.buildItem(loadedItems[index], context);
+              },
+            );
+          } else {
+            return Center(child: Text("No data available"));
+          }
+        },
+      ),
+    );
+  }
+}
+
+// class GenericContentPage2<T> extends StatefulWidget {
+//   final Future<List<T>> Function() retrieveContent;
+//   final Widget Function(T, BuildContext) buildItem;
+//   final Future<void>? Function(T, BuildContext) precachingStrategy;
+//
+//   GenericContentPage2({
+//     super.key,
+//     required this.retrieveContent,
+//     required this.buildItem,
+//     required this.precachingStrategy,
+//   });
+//
+//   @override
+//   _GenericContentPage2State<T> createState() => _GenericContentPage2State<T>();
+// }
+//
+// class _GenericContentPage2State<T> extends State<GenericContentPage2<T>> {
+//   late Future<List<T>> postsFuture;
+//
+//   @override
+//   void initState() {
+//     super.initState();
+//     postsFuture = widget.retrieveContent();
+//   }
+//
+//   // Funkcja wywoływana podczas pull-to-refresh
+//   Future<void> _refreshPosts() async {
+//     setState(() {
+//       postsFuture = widget.retrieveContent();
+//     });
+//   }
+//
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       appBar: AppBar(title: Text('Posts')),
+//       body: RefreshIndicator(
+//         onRefresh: _refreshPosts, // Używamy RefreshIndicator do wywołania _refreshPosts
+//         child: FutureBuilder<List<T>>(
+//           future: postsFuture,
+//           builder: (context, snapshot) {
+//             if (snapshot.connectionState == ConnectionState.waiting) {
+//               return Center(child: CircularProgressIndicator());
+//             } else if (snapshot.hasError) {
+//               return Center(child: Text('Błąd: ${snapshot.error}'));
+//             } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+//               return Center(child: Text('Brak danych'));
+//             } else {
+//               // Budowanie listy elementów
+//               return ListView.builder(
+//                 itemCount: snapshot.data!.length,
+//                 itemBuilder: (context, index) {
+//                   T post = snapshot.data![index];
+//                   return widget.buildItem(post, context);
+//                 },
+//               );
+//             }
+//           },
+//         ),
+//       ),
+//     );
+//   }
+// }

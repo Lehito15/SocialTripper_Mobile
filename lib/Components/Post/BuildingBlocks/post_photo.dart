@@ -19,7 +19,7 @@ class _PostPhotoState extends State<PostPhoto> {
   double? imageRatio;
   late VideoPlayerController _videoController;
   late CustomVideoPlayerController _customVideoPlayerController;
-  late CachedVideoPlayerController _cachedVideoController;
+  CachedVideoPlayerController? _cachedVideoController;
   bool _isVideo = false;
 
   @override
@@ -31,28 +31,36 @@ class _PostPhotoState extends State<PostPhoto> {
     }
   }
 
-  // Funkcja sprawdzająca, czy URL dotyczy wideo
-  // Funkcja do sprawdzenia, czy URL jest linkiem do wideo
   void _checkIfVideo() {
     if (widget.url.endsWith('.mp4') || widget.url.contains('video')) {
       setState(() {
         _isVideo = true;
       });
+
+      // Sprawdzamy, czy już mamy kontroler
+      if (_cachedVideoController != null) {
+        _disposeController();
+      }
+
+      // Inicjalizujemy nowy kontroler wideo
       _cachedVideoController = CachedVideoPlayerController.network(widget.url)
         ..initialize().then((_) {
-          setState(() {}); // Odświeżenie widoku po inicjalizacji
+          if (mounted) {
+            setState(() {}); // Odświeżenie widoku po inicjalizacji, jeśli widget jest nadal w drzewie
+          }
         });
 
-      // Tworzenie CustomVideoPlayerController z _cachedVideoController
+      // Tworzymy CustomVideoPlayerController z _cachedVideoController
       _customVideoPlayerController = CustomVideoPlayerController(
         context: context,
-        videoPlayerController: _cachedVideoController,
+        videoPlayerController: _cachedVideoController!,
       );
 
       // Dodajemy nasłuchiwanie zakończenia odtwarzania
-      _cachedVideoController.addListener(() {
-        if (_cachedVideoController.value.position >= _cachedVideoController.value.duration && _cachedVideoController.value.isPlaying) {
-          _cachedVideoController.seekTo(Duration.zero);
+      _cachedVideoController?.addListener(() {
+        if (_cachedVideoController!.value.position >= _cachedVideoController!.value.duration &&
+            _cachedVideoController!.value.isPlaying) {
+          _cachedVideoController?.seekTo(Duration.zero);
         }
       });
     } else {
@@ -60,7 +68,6 @@ class _PostPhotoState extends State<PostPhoto> {
     }
   }
 
-  // Funkcja do pobrania wymiarów obrazu
   void _getImageDimensions() {
     final imageProvider = CachedNetworkImageProvider(widget.url);
     imageProvider.resolve(ImageConfiguration()).addListener(
@@ -74,16 +81,26 @@ class _PostPhotoState extends State<PostPhoto> {
     );
   }
 
-  // Funkcja do sprawdzenia, czy ratio jest dziwne/szkodliwe
-  bool _isOddRatio(double ratio) {
-    return ratio < 0.2 || ratio > 5.0;
+  void _disposeController() async {
+    // Sprawdzamy, czy kontroler istnieje i nie jest używany
+    if (_cachedVideoController != null) {
+      final oldController = _cachedVideoController;
+
+      // Zwalniamy stary kontroler po zakończeniu aktualnej klatki
+      WidgetsBinding.instance.addPostFrameCallback((_) async {
+        await oldController?.dispose();
+      });
+
+      // Ustawiamy kontroler na null, aby upewnić się, że nie jest używany
+      setState(() {
+        _cachedVideoController = null;
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // Jeżeli jest to wideo, to wyświetl video player
     if (_isVideo) {
-      print("showing video");
       return AspectRatio(
         aspectRatio: 4 / 3, // Możesz dostosować proporcje wideo
         child: CustomVideoPlayer(
@@ -92,12 +109,10 @@ class _PostPhotoState extends State<PostPhoto> {
       );
     }
 
-    // Jeżeli to obraz, wyświetl obraz
     if (imageHeight == null || imageWidth == null || imageRatio == null) {
       return Center(child: CircularProgressIndicator());
     }
 
-    // Jeżeli proporcje obrazu są dziwne, użyj AspectRatio
     if (_isOddRatio(imageRatio!)) {
       return AspectRatio(
         aspectRatio: 3 / 4,
@@ -128,10 +143,14 @@ class _PostPhotoState extends State<PostPhoto> {
   @override
   void dispose() {
     if (_isVideo) {
-      _cachedVideoController.dispose(); // Zwolnienie zasobów
-      _customVideoPlayerController.dispose(); // Zwolnienie zasobów CustomVideoPlayerController
-      super.dispose();
+      _disposeController(); // Zwalniamy kontroler wideo, jeśli jest
+      _customVideoPlayerController.dispose(); // Zwalniamy zasoby CustomVideoPlayerController
     }
     super.dispose();
   }
+}
+
+// Funkcja do sprawdzenia, czy ratio jest dziwne/szkodliwe
+bool _isOddRatio(double ratio) {
+  return ratio < 0.2 || ratio > 5.0;
 }

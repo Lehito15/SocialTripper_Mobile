@@ -55,4 +55,9 @@ class PostMasterModel {
       'postMultimediaUrls': postMultimediaUrls.toList(),
     };
   }
+
+  @override
+  String toString() {
+    return 'PostMasterModel{reactionsNumber: $reactionsNumber}';
+  }
 }

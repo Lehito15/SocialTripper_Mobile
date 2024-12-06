@@ -11,7 +11,7 @@ class PostRepository {
   static List<PostMasterModel> posts = [];
   static final String baseUrl = DataRetrievingConfig.sourceUrl;
 
-  static Future<List<PostMasterModel>> _loadAllPosts() async {
+  static Future<List<PostMasterModel>> loadAllPosts() async {
     String? currentUserUUID = await AccountService().getSavedAccountUUID();
     var client = http.Client();
     List<PostMasterModel> posts = [];
@@ -19,12 +19,10 @@ class PostRepository {
     try {
       var response = await client.get(Uri.parse('$baseUrl/posts'));
       if (response.statusCode == 200) {
-        print('Response body: ${response.body}');
 
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
 
         if (decodedResponse is List) {
-          // Tworzymy listę futures
           List<Future<void>> futures = [];
 
           for (var post in decodedResponse) {
@@ -60,8 +58,10 @@ class PostRepository {
   }
 
   static Future<void> initialize() async {
+    posts.clear();
+    print("cleared");
     index = 0;
-    posts = await _loadAllPosts();
+    posts = await loadAllPosts();
     posts = posts.reversed.toList();
   }
 
