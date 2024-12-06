@@ -10,12 +10,16 @@ import 'package:geolocator/geolocator.dart';
 import 'package:get_thumbnail_video/index.dart';
 import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../Components/TripInterface/camera.dart';
 import '../Components/TripInterface/marker.dart';
 import '../Utilities/Tasks/location_task.dart';
+import '../Utilities/Server/web_socket_client.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart';
+import 'package:http/http.dart' as http;
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 
 class TripInterface extends StatefulWidget {
@@ -28,11 +32,20 @@ class TripInterface extends StatefulWidget {
 class _TripInterfaceState extends State<TripInterface> {
   // @override
   // bool get wantKeepAlive => true;
+  bool isLeader = false;
+  String tripId = '1';
 
-  bool isStartButtonVisible = true;
+  final String serverAddress = 'ws://156.17.237.132:8080';
+  final WebSocketClient client = WebSocketClient('ws://156.17.237.132:8080');
+  String lastReceivedId = '0';
+  List<String> receivedIds = [];
+
+  bool isTripNotStarted = true;
   String locationMessage = 'Current Location of the User';
   String lat = "";
   String long = "";
+  String leaderLat = "";
+  String leaderLong = "";
   int _counter = 0;
   List<LatLng> routeCoordinates = [];
   LatLng? lastPosition;
@@ -46,7 +59,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
   double speedLimit = 0.8;
   int distanceLimit = 25;
-  int maxDistanceLimit = 40;
+  int maxDistanceLimit = 1;
   int timeLimit = 10;
 
   bool hasAccelerometer = true;
@@ -54,10 +67,10 @@ class _TripInterfaceState extends State<TripInterface> {
   double highestVelocity = 0.0;
 
   List<Marker> markers = [];
-
   MapController mapController = MapController();
 
   StreamSubscription<UserAccelerometerEvent>? _accelerometerSubscription;
+  StreamSubscription<Position>? _positionSubscription;
 
   @override
   void initState() {
@@ -67,8 +80,18 @@ class _TripInterfaceState extends State<TripInterface> {
     //     _liveLocation();
     //   }
     // });
-    loadState();
-    if (!isStartButtonVisible) _liveLocation();
+    loadState().then((value) {
+      if (!isTripNotStarted) {
+        if (isLeader) {
+          startAsLeader();
+          _liveLocation();
+        }
+        else {
+          startAsParticipant();
+          _liveLocation();
+        }
+      }
+    });
     _accelerometerSubscription = userAccelerometerEventStream().listen(
           (UserAccelerometerEvent event) {
         _onAccelerate(event);
@@ -83,9 +106,12 @@ class _TripInterfaceState extends State<TripInterface> {
     final prefs = await SharedPreferences.getInstance();
 
     // Zapisanie widoczności przycisku
-    await prefs.setBool('isStartButtonVisible', isStartButtonVisible);
+    await prefs.setBool('isTripNotStarted', isTripNotStarted);
     await prefs.setString('lat', lat);
     await prefs.setString('long', long);
+
+    await prefs.setString('lastReceivedId', lastReceivedId);
+    await prefs.setStringList('receivedIds', receivedIds);
 
     // Zapisanie koordynatów trasy jako JSON
     final routeCoords = routeCoordinates
@@ -108,16 +134,19 @@ class _TripInterfaceState extends State<TripInterface> {
   }
 
   Future<void> loadState() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs =  await SharedPreferences.getInstance();
 
-    // Odczyt widoczności przycisku
-    isStartButtonVisible = prefs.getBool('isStartButtonVisible') ?? true;
+    isTripNotStarted = prefs.getBool('isTripNotStarted') ?? true;
     lat = prefs.getString('lat') ?? "";
     long = prefs.getString('long') ?? "";
 
-    mapController.move(LatLng(double.parse(lat), double.parse(long)), 17.0);
+    lastReceivedId = prefs.getString('lastReceivedId') ?? "0";
+    receivedIds = prefs.getStringList('receivedIds') ?? [];
 
-    // Odczyt koordynatów trasy
+    if (lat.isNotEmpty && long.isNotEmpty) {
+      mapController.move(LatLng(double.parse(lat), double.parse(long)), 17.0);
+    }
+
     final routeCoordsString = prefs.getString('routeCoordinates');
     if (routeCoordsString != null) {
       final routeCoords = jsonDecode(routeCoordsString) as List<dynamic>;
@@ -142,10 +171,214 @@ class _TripInterfaceState extends State<TripInterface> {
   @override
   void dispose() {
     // Anulowanie subskrypcji, gdy widget jest usuwany z drzewa
-    saveState();
     print("Disposed");
     _accelerometerSubscription?.cancel();
     super.dispose();
+  }
+
+  void startAsLeader() {
+    // Połączenie z serwerem WebSocket jako lider
+    client.connect().then((_) {
+      print('Connected to WebSocket server as Leader.');
+
+      // Wysyłanie pozycji lidera co 5 sekund
+      Timer.periodic(Duration(seconds: 5), (timer) {
+        final leaderPositionUpdate = jsonEncode({
+          'trip_id': tripId,
+          'type': 'leader_position',
+          'lat': lat,
+          'long': long,
+        });
+        client.sendMessage(leaderPositionUpdate);
+      });
+
+      final syncMessage = jsonEncode({
+        'trip_id': tripId,
+        "type": "sync_media",
+        "last_id": lastReceivedId,
+      });
+      client.sendMessage(syncMessage);
+    });
+
+    monitorConnectivity(client);
+
+    // Obsługa przychodzących wiadomości
+    // client.onMessage((message) {
+    //   final data = jsonDecode(message);
+    //
+    //   if (data['type'] == 'request_route') {
+    //     // Klient prosi o trasę
+    //     final routeUpdate = jsonEncode({
+    //       'type': 'route_update',
+    //       'routeCoordinates': routeCoordinates
+    //           .map((coord) => {'lat': coord.latitude, 'lng': coord.longitude})
+    //           .toList(),
+    //     });
+    //     client.sendMessage(routeUpdate);
+    //   }
+    // });
+
+    client.onMessage((message) async {
+      final data = jsonDecode(message);
+
+      if (data['type'] == 'new_media') {
+        final receivedId = data['id'];
+        final filePath = data['filePath'];
+        final markerLat = data['lat'];
+        final markerLong = data['long'];
+
+        if (!receivedIds.contains(receivedId)) {
+          receivedIds.add(receivedId);
+          lastReceivedId = receivedId;
+
+          try {
+            final uri = Uri.parse("http://156.17.237.132:8000$filePath");
+            final response = await http.get(uri);
+
+            if (response.statusCode == 200) {
+              final directory = await getTemporaryDirectory();
+              final fileName = uri.pathSegments.last;
+              final localPath = "${directory.path}/$fileName";
+
+              final file = File(localPath);
+              await file.writeAsBytes(response.bodyBytes);
+              _addMarker(localPath, LatLng(double.parse(markerLat), double.parse(markerLong)));
+            } else {
+              print("Failed to download media: ${response.statusCode}");
+              return null;
+            }
+          } catch (e) {
+            print("Error downloading media: $e");
+            return null;
+          }
+        }
+        saveState();
+      }
+    });
+  }
+
+  void startAsParticipant() {
+    client.connect().then((_) {
+      print('Connected to WebSocket server as participant.');
+
+      final syncMessage = jsonEncode({
+        'trip_id': tripId,
+        "type": "sync_media",
+        "last_id": lastReceivedId,
+      });
+      client.sendMessage(syncMessage);
+    });
+
+    monitorConnectivity(client);
+
+    client.onMessage((message) async {
+      final data = jsonDecode(message);
+
+      // if (data['type'] == 'route_update') {
+      //   // Aktualizacja trasy
+      //   final routeCoordinates = (data['routeCoordinates'] as List)
+      //       .map((coord) => LatLng(coord['lat'], coord['lng']))
+      //       .toList();
+      //   setState(() {
+      //     this.routeCoordinates = routeCoordinates;
+      //   });
+      // }
+
+      if (data['type'] == 'leader_position') {
+        // Aktualizacja pozycji lidera
+        setState(() {
+          leaderLat = data['lat'];
+          leaderLong = data['long'];
+        });
+      }
+
+      if (data['type'] == 'stop_trip') {
+        stopClient();
+      }
+
+      if (data['type'] == 'new_media') {
+        final receivedId = data['id'];
+        final filePath = data['filePath'];
+        final markerLat = data['lat'];
+        final markerLong = data['long'];
+
+        if (!receivedIds.contains(receivedId)) {
+          receivedIds.add(receivedId);
+          lastReceivedId = receivedId;
+
+          try {
+            final uri = Uri.parse("http://156.17.237.132:8000$filePath");
+            final response = await http.get(uri);
+
+            if (response.statusCode == 200) {
+              final directory = await getTemporaryDirectory();
+              final fileName = uri.pathSegments.last;
+              final localPath = "${directory.path}/$fileName";
+
+              final file = File(localPath);
+              await file.writeAsBytes(response.bodyBytes);
+              _addMarker(localPath, LatLng(double.parse(markerLat), double.parse(markerLong)));
+            } else {
+              print("Failed to download media: ${response.statusCode}");
+              return null;
+            }
+          } catch (e) {
+            print("Error downloading media: $e");
+            return null;
+          }
+        }
+        saveState();
+      }
+    });
+  }
+
+  void stopAsLeader() {
+    final stopMessage = jsonEncode({
+      'trip_id': tripId,
+      "type": "stop_trip",
+    });
+    client.sendMessage(stopMessage);
+    stopClient();
+  }
+
+  void stopClient() {
+    client.disconnect();
+    setState(() {
+      isTripNotStarted = true;
+      routeCoordinates = [];
+      markers = [];
+      lat = "";
+      long = "";
+      leaderLat = "";
+      leaderLong = "";
+      lastReceivedId = "0";
+      receivedIds = [];
+    });
+    saveState();
+  }
+
+  void monitorConnectivity(WebSocketClient websocketClient) {
+    // Nasłuchuj zmian w połączeniach
+    Connectivity().onConnectivityChanged.listen((List<ConnectivityResult> result) {
+      if (result.contains(ConnectivityResult.none)) {
+        // Użytkownik stracił połączenie z internetem
+        print("Lost network connection.");
+        websocketClient.disconnect();
+      } else {
+        // Użytkownik odzyskał połączenie
+        print("Network connection restored.");
+        if (!websocketClient.isConnected()) {
+          websocketClient.connect().then((_) {
+            final syncMessage = jsonEncode({
+              'trip_id': tripId,
+              "type": "sync_media",
+              "last_id": lastReceivedId,
+            });
+            client.sendMessage(syncMessage);
+          });
+        }
+      }
+    });
   }
 
   void _onAccelerate(UserAccelerometerEvent event) {
@@ -223,8 +456,45 @@ class _TripInterfaceState extends State<TripInterface> {
     );
 
     if (mediaPath != null) {
-      _addMarker(mediaPath, LatLng(double.parse(lat), double.parse(long)));
-      saveState();
+      // _addMarker(mediaPath, LatLng(double.parse(lat), double.parse(long)));
+      uploadMedia(mediaPath, lat, long).then((_) {
+        print("Media przesłane pomyślnie.");
+        saveState();
+      }).catchError((error) {
+        print("Błąd podczas przesyłania mediów: $error");
+      });
+
+    }
+  }
+
+  Future<void> uploadMedia(String filePath, String latitude, String longitude) async {
+    try {
+      final uri = Uri.parse('http://156.17.237.132:8000/upload_media/');
+      final request = http.MultipartRequest('POST', uri);
+
+      // Dodaj plik do żądania
+      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      request.fields['lat'] = latitude;
+      request.fields['long'] = longitude;
+      request.fields['trip_uuid'] = tripId;
+      // Wyślij żądanie
+      final response = await request.send();
+
+      if (response.statusCode == 200) {
+        print("File uploaded successfully.");
+
+          final message = jsonEncode({
+            'type': 'new_media',
+            'filename': filePath.split('/').last,
+            'lat': latitude,
+            'long': longitude,
+          });
+          client.sendMessage(message);
+      } else {
+        print("Failed to upload file. Status code: ${response.statusCode}");
+      }
+    } catch (e) {
+      print("Error uploading file: $e");
     }
   }
 
@@ -253,16 +523,26 @@ class _TripInterfaceState extends State<TripInterface> {
     }
   }
 
+  void stopForegroundService() async {
+    await FlutterForegroundTask.stopService();
+  }
+
   void _liveLocation() {
     startForegroundService();
     LocationSettings locationSettings = const LocationSettings(
       accuracy: LocationAccuracy.high,
     );
 
-    Geolocator.getPositionStream(locationSettings: locationSettings).listen((
+    _positionSubscription = Geolocator.getPositionStream(locationSettings: locationSettings).listen((
         Position position) {
       DateTime currentTime = DateTime.now();
       LatLng tempLatLng = LatLng(position.latitude, position.longitude);
+      setState(() {
+        lat = tempLatLng.latitude.toString();
+        long = tempLatLng.longitude.toString();
+        //locationMessage = 'Latitude: $lat, Longitude: $long';
+        //locationMessage = 'Counter: $_counter';
+      });
       positionPack.add(tempLatLng);
       // if (!hasAccelerometer) {
       //   speedPack.add(position.speed);
@@ -274,30 +554,12 @@ class _TripInterfaceState extends State<TripInterface> {
           .inSeconds >= timeLimit) {
         LatLng currentPosition = calculateAverageLocation(positionPack);
         double speedAvg = calculateAverageList(speedPack);
-        print(currentTime
-            .difference(lastUpdateTime)
-            .inSeconds);
+        print(markers.length);
         print(positionPack);
         print(speedAvg);
         positionPack = [];
         speedPack = [];
         lastUpdateTime = currentTime;
-
-        // if (mounted) {
-        //   setState(() {
-        //     lat = currentPosition.latitude.toString();
-        //     long = currentPosition.longitude.toString();
-        //     //locationMessage = 'Latitude: $lat, Longitude: $long';
-        //     //locationMessage = 'Counter: $_counter';
-        //   });
-        // }
-
-        setState(() {
-          lat = currentPosition.latitude.toString();
-          long = currentPosition.longitude.toString();
-          //locationMessage = 'Latitude: $lat, Longitude: $long';
-          //locationMessage = 'Counter: $_counter';
-        });
 
         if (lastPosition != null) {
           double distance = Geolocator.distanceBetween(
@@ -314,7 +576,7 @@ class _TripInterfaceState extends State<TripInterface> {
             });
             saveState();
           }
-        } else if (routeCoordinates == []) {
+        } else {
           setState(() {
             routeCoordinates.add(currentPosition);
             lastPosition = currentPosition;
@@ -323,6 +585,30 @@ class _TripInterfaceState extends State<TripInterface> {
         }
       }
     });
+  }
+
+  void _participantLiveLocation() {
+    startForegroundService();
+    LocationSettings locationSettings = const LocationSettings(
+      accuracy: LocationAccuracy.high,
+    );
+
+    _positionSubscription = Geolocator.getPositionStream(locationSettings: locationSettings).listen((
+        Position position) {
+      LatLng tempLatLng = LatLng(position.latitude, position.longitude);
+      setState(() {
+        lat = tempLatLng.latitude.toString();
+        long = tempLatLng.longitude.toString();
+        //locationMessage = 'Latitude: $lat, Longitude: $long';
+        //locationMessage = 'Counter: $_counter';
+      });
+    });
+  }
+
+  void stopLiveLocation() {
+    _positionSubscription?.cancel();
+    _positionSubscription = null; // Opcjonalnie ustaw na null dla czytelności.
+    stopForegroundService();
   }
 
   LatLng calculateAverageLocation(List<LatLng> coordinates) {
@@ -342,12 +628,6 @@ class _TripInterfaceState extends State<TripInterface> {
     double avgLng = sumLng / coordinates.length;
 
     return LatLng(avgLat, avgLng);
-  }
-
-  LatLng _getSmoothedPosition(LatLng lastPos, LatLng currentPos) {
-    double smoothedLat = (lastPos.latitude + currentPos.latitude) / 2;
-    double smoothedLong = (lastPos.longitude + currentPos.longitude) / 2;
-    return LatLng(smoothedLat, smoothedLong);
   }
 
   double calculateAverageList(List<double> list) {
@@ -403,26 +683,31 @@ class _TripInterfaceState extends State<TripInterface> {
               child: Column(
                 children: [
                   //debugLocationComponent(locationMessage),
-                  if (isStartButtonVisible)
+                  if (isTripNotStarted)
                     // wyekstrachowac do komponentow
                     ElevatedButton(
                       onPressed: () {
                         // takie rzeczy na pewno wyekstrahować do osobnych metod
                         _getCurrentLocation().then((value) {
-                          print(
-                              'Button pressed! Attempting to get location...');
                           lat = '${value.latitude}';
                           long = '${value.longitude}';
                           setState(() {
                             locationMessage =
                             'Latitude: $lat, Longitude: $long';
-                            isStartButtonVisible = false;
+                            isTripNotStarted = false;
                           });
 
                           mapController.move(LatLng(value.latitude,
-                              value.longitude), 17.0);
+                              value.longitude), 20.0);
                           saveState();
-                          _liveLocation();
+                          if (isLeader) {
+                            startAsLeader();
+                            _liveLocation();
+                          }
+                          else {
+                            startAsParticipant();
+                            _liveLocation();
+                          }
                         });
                       },
                       style: ElevatedButton.styleFrom(
@@ -437,14 +722,16 @@ class _TripInterfaceState extends State<TripInterface> {
                         ),
                       ),
                     ),
-                  if (!isStartButtonVisible)
+                  if (!isTripNotStarted)
                   ElevatedButton(
                     onPressed: () {
-                      startForegroundService();
-                      isStartButtonVisible = true;
-                      routeCoordinates = [];
-                      markers = [];
-                      saveState();
+                      if (client.isConnected() && isLeader) {
+                        stopLiveLocation();
+                        stopAsLeader();
+                      } else if (!isLeader) {
+                        stopLiveLocation();
+                        stopClient();
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
@@ -487,15 +774,26 @@ class _TripInterfaceState extends State<TripInterface> {
                     ),
                     MarkerLayer(
                       markers: [
+                        if (leaderLat.isNotEmpty && leaderLong.isNotEmpty)
+                          Marker(
+                            width: 25.0,
+                            height: 25.0,
+                            point: LatLng(double.parse(leaderLat), double.parse(
+                                leaderLong)),
+                            child: Icon(
+                              Icons.circle,
+                              color: Colors.yellow,
+                              size: 20,
+                            ),
+                          ),
                         if (lat.isNotEmpty && long.isNotEmpty)
                           Marker(
                             width: 25.0,
                             height: 25.0,
-                            point: LatLng(double.parse(lat), double.parse(
-                                long)),
+                            point: LatLng(double.parse(lat), double.parse(long)),
                             child: Icon(
                               Icons.circle,
-                              color: Colors.lightBlue,
+                              color: Colors.blueGrey,
                               size: 20,
                             ),
                           ),
@@ -509,7 +807,7 @@ class _TripInterfaceState extends State<TripInterface> {
         ),
         floatingActionButton: Padding(
           padding: const EdgeInsets.only(bottom: 30.0), // Dodaj odstęp od dołu
-          child: !isStartButtonVisible
+          child: !isTripNotStarted
               ? FloatingActionButton(
             onPressed: _openCamera,
             tooltip: 'Add photo or video',
