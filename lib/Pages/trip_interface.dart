@@ -113,6 +113,7 @@ class _TripInterfaceState extends State<TripInterface> {
     await prefs.setString('lastReceivedId', lastReceivedId);
     await prefs.setStringList('receivedIds', receivedIds);
 
+
     // Zapisanie koordynatów trasy jako JSON
     final routeCoords = routeCoordinates
         .map((coord) => {'lat': coord.latitude, 'lng': coord.longitude})
@@ -147,6 +148,7 @@ class _TripInterfaceState extends State<TripInterface> {
       mapController.move(LatLng(double.parse(lat), double.parse(long)), 17.0);
     }
 
+
     final routeCoordsString = prefs.getString('routeCoordinates');
     if (routeCoordsString != null) {
       final routeCoords = jsonDecode(routeCoordsString) as List<dynamic>;
@@ -171,6 +173,7 @@ class _TripInterfaceState extends State<TripInterface> {
   @override
   void dispose() {
     // Anulowanie subskrypcji, gdy widget jest usuwany z drzewa
+    saveState();
     print("Disposed");
     _accelerometerSubscription?.cancel();
     super.dispose();
@@ -554,7 +557,6 @@ class _TripInterfaceState extends State<TripInterface> {
           .inSeconds >= timeLimit) {
         LatLng currentPosition = calculateAverageLocation(positionPack);
         double speedAvg = calculateAverageList(speedPack);
-        print(markers.length);
         print(positionPack);
         print(speedAvg);
         positionPack = [];
@@ -576,7 +578,7 @@ class _TripInterfaceState extends State<TripInterface> {
             });
             saveState();
           }
-        } else {
+        } else if (routeCoordinates == []) {
           setState(() {
             routeCoordinates.add(currentPosition);
             lastPosition = currentPosition;
@@ -684,6 +686,7 @@ class _TripInterfaceState extends State<TripInterface> {
                 children: [
                   //debugLocationComponent(locationMessage),
                   if (isTripNotStarted)
+
                     // wyekstrachowac do komponentow
                     ElevatedButton(
                       onPressed: () {
