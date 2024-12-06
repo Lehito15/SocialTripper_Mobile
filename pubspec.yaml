@@ -18,6 +18,7 @@ dependencies:
   #  better_open_file: ^3.6.5
   cached_video_player: 2.0.4
   camerawesome: 2.1.0
+  connectivity_plus: ^6.1.0
   cupertino_icons: ^1.0.8
   device_info_plus: ^11.1.0
   flutter_foreground_task: ^8.14.0
@@ -36,7 +37,9 @@ dependencies:
   flutter_bloc: ^8.1.6
   tuple: ^2.0.0
   json_annotation: ^4.8.0
-
+  shelf: ^1.4.0
+  shelf_web_socket: ^2.0.1
+  network_info_plus: ^6.1.1
 
 
 dev_dependencies:
