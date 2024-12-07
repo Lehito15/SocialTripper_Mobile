@@ -167,10 +167,12 @@ final GoRouter router = GoRouter(
           GoRoute(
             path: '/trip',
             builder: (context, state) {
+              print("go trip");
               final data = state.extra as Map<String, dynamic>?;
-              final tripUUID = data?['tripUUID'] as String;
               final isOwner = data?['isOwner'] as bool;
-              return TripInterface(tripUUID: tripUUID, isOwner: isOwner);
+              final trip = data?['trip'] as TripMaster;
+              print(trip);
+              return TripInterface(trip: trip, isOwner: isOwner);
             },
           )
         ])

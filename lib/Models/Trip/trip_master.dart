@@ -149,4 +149,9 @@ class TripMaster {
       'languages': languages.map((language) => language.toJson()).toList(),
     };
   }
+
+  @override
+  String toString() {
+    return 'TripMaster{uuid: $uuid, name: $name, description: $description, rules: $rules, iconUrl: $iconUrl}';
+  }
 }

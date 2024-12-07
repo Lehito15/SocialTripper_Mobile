@@ -153,7 +153,7 @@ class _RelationState extends State<Relation> with TickerProviderStateMixin {
         Column(
           children: [
             RelationProfileThumbnail(
-              "Kurt angle",
+              "test",
               "https://picsum.photos/id/237/200/300",
               4,
               DateTime(2024, 12, 12, 12, 12),

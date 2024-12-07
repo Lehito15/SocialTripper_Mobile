@@ -8,6 +8,7 @@ import '../../Services/trip_service.dart';
 
 FloatingActionButton ActiveTripFab(BuildContext context,
     AppViewModel appViewModel) {
+  print("creating FAB!");
   return FloatingActionButton(
     backgroundColor: Colors.black,
     foregroundColor: Color(0xFFBDF271),
@@ -24,7 +25,7 @@ FloatingActionButton ActiveTripFab(BuildContext context,
     final tripUUID = await accountService.getActiveTrip();
     final trip = await tripService.getEventByUUID(tripUUID!);
     context.go("/trip", extra: {
-      'tripUUID': tripUUID,
+      'trip': trip,
       'isOwner': trip.owner.uuid == myUUID,
     });
     appViewModel.changeIndex(-1);
