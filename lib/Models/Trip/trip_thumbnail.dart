@@ -27,7 +27,6 @@ class TripThumbnail {
 
 
   factory TripThumbnail.fromJson(Map<String, dynamic> json) {
-    print(json);
     return TripThumbnail(
       json['uuid'] as String,
       json['name'] as String,

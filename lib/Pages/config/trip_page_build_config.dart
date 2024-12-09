@@ -2,16 +2,10 @@ import 'dart:ffi';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:go_router/go_router.dart';
-import 'package:social_tripper_mobile/Components/BottomNavigation/bottom_navigation.dart';
 import 'package:social_tripper_mobile/Repositories/trip_repository.dart';
-import 'package:social_tripper_mobile/Services/account_service.dart';
-import 'package:social_tripper_mobile/Services/trip_service.dart';
-
 import '../../Components/TripMaster/trip_master.dart';
 import '../../Models/Trip/trip_master.dart';
-import '../../Utilities/DataGenerators/Trip/trip_generator.dart';
-import '../TripDetail/trip_detail_page.dart';
+
 
 class TripPageBuildConfig {
   static Future<void> cachingStrategy(TripMaster trip, BuildContext context) async {
@@ -26,7 +20,6 @@ class TripPageBuildConfig {
       return const Center(child: Text("Error loading trip"));
     }
 
-
     Widget clickableTrip = Container(
       child: TripMasterView(trip: trip),
     );
@@ -36,10 +29,6 @@ class TripPageBuildConfig {
       child: clickableTrip,
     );
   }
-
-  // static Future<TripMaster> retrieveGeneratedElement() {
-  //   return TripGenerator.generateTripMaster();
-  // }
 
   static Future<TripMaster?> retrieveBackendElement() {
     print("retrieving trip");

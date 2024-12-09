@@ -40,7 +40,6 @@ class _TripsPageState extends State<TripsPage> {
     //   buildItem: TripPageBuildConfig.buildItem,
     //   scrollController: _scrollController,
     // );
-    print("tripa");
     content = GenericContentPage2(retrieveContent: service.loadAllTripsStream,
       buildItem: TripPageBuildConfig.buildItem,
       precachingStrategy: TripPageBuildConfig.cachingStrategy,

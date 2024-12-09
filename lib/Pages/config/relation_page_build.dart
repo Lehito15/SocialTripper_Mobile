@@ -26,11 +26,9 @@ class RelationPageBuildConfig {
         final url = tm.multimediaUrl; // Pobranie URL multimediów
         if (url.isNotEmpty) {
           if (_isImage(url)) {
-            print("Caching image: $url");
             final image = CachedNetworkImageProvider(url);
             await image.resolve(ImageConfiguration());
           } else if (_isVideo(url)) {
-            print("Caching video: $url");
             final controller = VideoPlayerController.network(url);
             await controller.initialize();
             controller.dispose(); // Zwolnienie pamięci po wideo

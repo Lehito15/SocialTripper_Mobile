@@ -264,7 +264,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
 
   Widget ManageTheTripButton(AppViewModel appViewModel, TripStatus status) {
     String displayText = "";
-    print(status.status);
 
     switch (status.status) {
       case "created":

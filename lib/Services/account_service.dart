@@ -21,7 +21,6 @@ class AccountService {
       // Pobierz atrybuty użytkownika (np. email)
       final userAttributes = await Amplify.Auth.fetchUserAttributes();
       final email = userAttributes[0].value; // Zakładamy, że email jest na pierwszej pozycji
-      print("emajil $email");
       final url = "$baseUrl/email?email=$email";
       var client = http.Client();
       var response = await client.get(Uri.parse(url));

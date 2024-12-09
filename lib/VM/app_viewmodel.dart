@@ -11,7 +11,6 @@ class AppViewModel extends ChangeNotifier {
     AccountService service = AccountService();
     activeTrip = await service.getActiveTrip();
     isActiveTripVisible = activeTrip != null;
-    print(isActiveTripVisible);
     notifyListeners();
   }
 

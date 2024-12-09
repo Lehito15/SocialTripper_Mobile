@@ -121,7 +121,6 @@ Widget RequestInteractionButton(
           }
         : () {
             onDecline();
-            print("Decline");
           },
     child: Container(
       padding: EdgeInsets.all(4),

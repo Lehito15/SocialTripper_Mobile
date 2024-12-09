@@ -59,7 +59,6 @@ class PostRepository {
 
   static Future<void> initialize() async {
     posts.clear();
-    print("cleared");
     index = 0;
     posts = await loadAllPosts();
     posts = posts.reversed.toList();
@@ -69,7 +68,6 @@ class PostRepository {
   Future<PostMasterModel?> retrieve() {
     if (index < posts.length) {
       Future<PostMasterModel> item = Future.value(posts[index]);
-      print(index);
       index ++;
       return item;
     } else {

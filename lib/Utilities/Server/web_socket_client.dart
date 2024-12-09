@@ -45,6 +45,7 @@ class WebSocketClient {
 
   /// Wysyła wiadomość do serwera
   void sendMessage(String message) {
+    print(message);
     if (_isConnected) {
       _socket.add(message);
     } else {

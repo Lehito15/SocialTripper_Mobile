@@ -45,8 +45,8 @@ class _TripInterfaceState extends State<TripInterface> {
   late bool isLeader;
   late String tripId;
 
-  final String serverAddress = 'ws://156.17.237.132:8080';
-  final WebSocketClient client = WebSocketClient('ws://156.17.237.132:8080');
+  final String serverAddress = 'ws://156.17.237.132:50000';
+  final WebSocketClient client = WebSocketClient('ws://156.17.237.132:50000');
   String lastReceivedId = '0';
   List<String> receivedIds = [];
 
@@ -85,6 +85,9 @@ class _TripInterfaceState extends State<TripInterface> {
   final _messageQueue = StreamController<Map<String, dynamic>>(); // Kolejka wiadomości
   bool _isProcessingMessage = false;
 
+
+  Timer? timer;
+
   @override
   void initState() {
     super.initState();
@@ -92,7 +95,6 @@ class _TripInterfaceState extends State<TripInterface> {
     tripId = widget.trip.uuid;
     isLeader = widget.isOwner;
 
-    print("czarnuch: ${widget.trip}");
     setupMessageHandler();
 
     loadState().then((value) {
@@ -148,7 +150,7 @@ class _TripInterfaceState extends State<TripInterface> {
         lastReceivedId = receivedId;
 
         try {
-          final uri = Uri.parse("http://156.17.237.132:8000$filePath");
+          final uri = Uri.parse("http://156.17.237.132:55000$filePath");
           final response = await http.get(uri);
 
           if (response.statusCode == 200) {
@@ -264,7 +266,7 @@ class _TripInterfaceState extends State<TripInterface> {
       print('Connected to WebSocket server as Leader.');
 
       // Wysyłanie pozycji lidera co 5 sekund
-      Timer.periodic(Duration(seconds: 5), (timer) {
+      timer = Timer.periodic(Duration(seconds: 5), (timer) {
         final leaderPositionUpdate = jsonEncode({
           'trip_id': tripId,
           'type': 'leader_position',
@@ -389,6 +391,7 @@ class _TripInterfaceState extends State<TripInterface> {
       }
 
       if (data['type'] == 'stop_trip') {
+        stopLiveLocation();
         stopClient();
       }
 
@@ -403,7 +406,7 @@ class _TripInterfaceState extends State<TripInterface> {
           lastReceivedId = receivedId;
 
           try {
-            final uri = Uri.parse("http://156.17.237.132:8000$filePath");
+            final uri = Uri.parse("http://156.17.237.132:55000$filePath");
             final response = await http.get(uri);
 
             if (response.statusCode == 200) {
@@ -443,6 +446,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
   void stopClient() async {
     client.disconnect();
+    timer?.cancel();
     setState(() {
       isTripNotStarted = true;
       routeCoordinates = [];
@@ -454,6 +458,7 @@ class _TripInterfaceState extends State<TripInterface> {
       lastReceivedId = "0";
       receivedIds = [];
     });
+
     await saveState();
     context.go("/home");
   }
@@ -570,7 +575,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
   Future<void> uploadMedia(String filePath, String latitude, String longitude) async {
     try {
-      final uri = Uri.parse('http://156.17.237.132:8000/upload_media/');
+      final uri = Uri.parse('http://156.17.237.132:55000/upload_media/');
       final request = http.MultipartRequest('POST', uri);
 
       // Dodaj plik do żądania
@@ -677,7 +682,7 @@ class _TripInterfaceState extends State<TripInterface> {
             });
             saveState();
           }
-        } else if (routeCoordinates == []) {
+        } else {
           setState(() {
             routeCoordinates.add(currentPosition);
             lastPosition = currentPosition;

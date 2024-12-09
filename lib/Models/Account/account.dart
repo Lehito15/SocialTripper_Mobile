@@ -58,7 +58,6 @@ class Account {
       int numberOfTrips = json['numberOfTrips'];
       String profilePictureUrl = json['profilePictureUrl'];
       UserThumbnail user = UserThumbnail.fromJson(json['user']);
-      print("account json complete okej");
       return Account(
         uuid,
         nickname,

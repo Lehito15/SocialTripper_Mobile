@@ -123,7 +123,6 @@ class _PostMasterState extends State<PostMaster> {
   }
 
   void commentCallback() {
-    print("comment callback");
     setState(() {
       commentCount ++;
       widget.model.commentsNumber = commentCount;
@@ -131,7 +130,6 @@ class _PostMasterState extends State<PostMaster> {
   }
 
   Future<void> _toggleComment() async {
-    print("clicked comments");
     context.push("/post_comments", extra: {
       'model': widget.model,
       'like_callback': _toggleLike,
@@ -141,7 +139,6 @@ class _PostMasterState extends State<PostMaster> {
 
   @override
   Widget build(BuildContext context) {
-    print(widget.model.content.length);
     return GestureDetector(
       onDoubleTap: _toggleLike, // Action on double tap
       child: Container(

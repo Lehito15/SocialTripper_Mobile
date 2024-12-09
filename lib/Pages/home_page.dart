@@ -32,14 +32,6 @@ class _HomePageState extends State<HomePage> {
   void initState() {
     PostService service = PostService();
     super.initState();
-    // content = GenericContentPage(
-    //   onRefresh: PostRepository.initialize,
-    //   scrollTresholdFunction: getLinearThreshold,
-    //   precachingStrategy: PostPageBuildConfig.cachingStrategy,
-    //   retrieveContent: PostPageBuildConfig.retrieveBackendElement,
-    //   buildItem: PostPageBuildConfig.buildItem,
-    //   scrollController: _scrollController,
-    // );
     content = GenericContentPage2(
       retrieveContent: service.loadAllPostsStream,
       buildItem: PostPageBuildConfig.buildItem,

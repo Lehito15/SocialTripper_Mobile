@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:social_tripper_mobile/Components/Shared/posted_entity_author_info.dart';
 import 'package:social_tripper_mobile/Models/Account/account_thumbnail.dart';
+import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Utilities/Converters/date_converter.dart';
 
 import 'bordered_user_picture.dart';
@@ -33,6 +34,16 @@ Widget RelationProfileThumbnail(String nickname, String url, int peopleCount, Da
         bottomString: "${DateConverter.convertDatetimeToString(startDate)} ➤ ${DateConverter.convertDatetimeToString(endDate)}",
       ),
       EntityOptionsDefault(),
+    ],
+  );
+}
+
+Widget RelationTopBar(TripMaster trip) {
+  return Row(
+    children: [
+      Text(
+        trip.name
+      ),
     ],
   );
 }

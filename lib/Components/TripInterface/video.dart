@@ -11,7 +11,7 @@ class VideoScreen extends StatefulWidget {
 }
 
 class _VideoScreenState extends State<VideoScreen> {
-  late CachedVideoPlayerController _videoPlayerController;
+  late CachedVideoPlayerPlusController _videoPlayerController;
 
   late CustomVideoPlayerController _customVideoPlayerController;
 
@@ -22,8 +22,8 @@ class _VideoScreenState extends State<VideoScreen> {
   void initState() {
     super.initState();
 
-    _videoPlayerController = CachedVideoPlayerController.network(
-      widget.videoPath,
+    _videoPlayerController = CachedVideoPlayerPlusController.networkUrl(
+      Uri.parse(widget.videoPath),
     )..initialize().then((value) => setState(() {}));
     _customVideoPlayerController = CustomVideoPlayerController(
       context: context,

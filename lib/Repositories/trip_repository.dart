@@ -48,7 +48,6 @@ class TripRepository {
   Future<TripMaster?> retrieve() {
     if (index < trips.length) {
       Future<TripMaster> item = Future.value(trips[index]);
-      print(index);
       index ++;
       return item;
     } else {

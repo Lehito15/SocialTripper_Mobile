@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:video_player/video_player.dart';
 
-
 class PostPhoto extends StatefulWidget {
   final String url;
 
@@ -17,10 +16,11 @@ class _PostPhotoState extends State<PostPhoto> {
   double? imageHeight;
   double? imageWidth;
   double? imageRatio;
-  late VideoPlayerController _videoController;
   late CustomVideoPlayerController _customVideoPlayerController;
-  CachedVideoPlayerController? _cachedVideoController;
+  CachedVideoPlayerPlusController? _cachedVideoController;
   bool _isVideo = false;
+  bool _isImageLoaded = false; // Flaga do monitorowania ładowania obrazu
+  bool _isVideoReady = false;  // Flaga do monitorowania gotowości wideo
 
   @override
   void initState() {
@@ -43,10 +43,12 @@ class _PostPhotoState extends State<PostPhoto> {
       }
 
       // Inicjalizujemy nowy kontroler wideo
-      _cachedVideoController = CachedVideoPlayerController.network(widget.url)
+      _cachedVideoController = CachedVideoPlayerPlusController.networkUrl(Uri.parse(widget.url))
         ..initialize().then((_) {
           if (mounted) {
-            setState(() {}); // Odświeżenie widoku po inicjalizacji, jeśli widget jest nadal w drzewie
+            setState(() {
+              _isVideoReady = true; // Wideo jest gotowe
+            });
           }
         });
 
@@ -72,35 +74,40 @@ class _PostPhotoState extends State<PostPhoto> {
     final imageProvider = CachedNetworkImageProvider(widget.url);
     imageProvider.resolve(ImageConfiguration()).addListener(
       ImageStreamListener((ImageInfo image, bool synchronousCall) {
-        setState(() {
-          imageHeight = image.image.height.toDouble();
-          imageWidth = image.image.width.toDouble();
-          imageRatio = imageHeight! / imageWidth!;
-        });
+        if (mounted) {
+          setState(() {
+            imageHeight = image.image.height.toDouble();
+            imageWidth = image.image.width.toDouble();
+            imageRatio = imageHeight! / imageWidth!;
+            _isImageLoaded = true; // Obraz jest załadowany
+          });
+        }
       }),
     );
   }
 
   void _disposeController() async {
-    // Sprawdzamy, czy kontroler istnieje i nie jest używany
     if (_cachedVideoController != null) {
       final oldController = _cachedVideoController;
 
       // Zwalniamy stary kontroler po zakończeniu aktualnej klatki
       WidgetsBinding.instance.addPostFrameCallback((_) async {
-        await oldController?.dispose();
+        // Upewniamy się, że widget jest nadal zamontowany przed wywołaniem dispose
+        if (mounted) {
+          await oldController?.dispose();
+        }
       });
 
-      // Ustawiamy kontroler na null, aby upewnić się, że nie jest używany
-      setState(() {
+      // Zwalniamy kontroler i ustawiamy go na null
+      if (mounted) {
         _cachedVideoController = null;
-      });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isVideo) {
+    if (_isVideo && _isVideoReady) {
       return AspectRatio(
         aspectRatio: 4 / 3, // Możesz dostosować proporcje wideo
         child: CustomVideoPlayer(
@@ -109,8 +116,8 @@ class _PostPhotoState extends State<PostPhoto> {
       );
     }
 
-    if (imageHeight == null || imageWidth == null || imageRatio == null) {
-      return Center(child: CircularProgressIndicator());
+    if (!_isImageLoaded) {
+      return Center(child: CircularProgressIndicator()); // Czekaj na załadowanie obrazu
     }
 
     if (_isOddRatio(imageRatio!)) {
@@ -142,9 +149,9 @@ class _PostPhotoState extends State<PostPhoto> {
 
   @override
   void dispose() {
-    if (_isVideo) {
-      _disposeController(); // Zwalniamy kontroler wideo, jeśli jest
-      _customVideoPlayerController.dispose(); // Zwalniamy zasoby CustomVideoPlayerController
+    if (_isVideo && mounted) {
+      _disposeController();
+      _customVideoPlayerController.dispose();
     }
     super.dispose();
   }

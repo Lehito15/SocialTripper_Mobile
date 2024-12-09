@@ -19,7 +19,6 @@ Future<void> signOutCurrentUser(BuildContext context) async {
     final result = await Amplify.Auth.signOut();
     if (result is CognitoCompleteSignOut) {
       safePrint('Sign out completed successfully');
-
       GoRouter.of(context).go('/data_loading');
     } else if (result is CognitoFailedSignOut) {
       safePrint('Error signing user out: ${result.exception.message}');

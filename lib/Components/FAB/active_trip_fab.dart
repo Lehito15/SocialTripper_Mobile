@@ -8,7 +8,6 @@ import '../../Services/trip_service.dart';
 
 FloatingActionButton ActiveTripFab(BuildContext context,
     AppViewModel appViewModel) {
-  print("creating FAB!");
   return FloatingActionButton(
     backgroundColor: Colors.black,
     foregroundColor: Color(0xFFBDF271),

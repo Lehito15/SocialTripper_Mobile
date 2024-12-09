@@ -22,15 +22,9 @@ class RelationService {
       if (response.statusCode == 200) {;
         List<dynamic> data = json.decode(response.body);
 
-
-        data.forEach((element) {
-          print('Element: $element');
-        });
-
         List<TripMultimedia> multimediaList = data
             .map((json) => TripMultimedia.fromJson(json))  // Mapowanie na obiekt TripMultimedia
             .toList();
-        print("After parse");
         return multimediaList;
       } else {
         print('Failed to load multimedia. Status code: ${response.statusCode}');
@@ -44,17 +38,14 @@ class RelationService {
 
 
   Stream<List<List<TripMultimedia>>> getAllRelationsStream() async* {
-    List<List<TripMultimedia>> allRelations = [];  // Lista przechowująca relacje
+    List<List<TripMultimedia>> allRelations = [];
+    print("start get all relations");
     List<TripMaster> trips = await tripService.loadAllTrips();
-
+    print("got all trips");
     for (var trip in trips) {
       if (trip.eventStatus.status == 'finished') {
-        print("abecadło: ${trip.name} ${trip.eventStatus.status}");
-
         try {
-          print(trip.uuid);
           List<TripMultimedia> relation = await getTripRelation(trip.uuid);
-          print("rel relation");
           allRelations.add(relation);
 
           yield allRelations;
@@ -65,6 +56,7 @@ class RelationService {
         }
       }
     }
+    print("end get all relations");
   }
 
   Future<List<List<TripMultimedia>>> getAllRelations() async {
@@ -73,7 +65,6 @@ class RelationService {
 
     for (var trip in trips) {
       if (trip.eventStatus.status == 'finished') {
-        print("abecadło: ${trip.name} ${trip.eventStatus.status}");
         List<TripMultimedia> multimedia = await getTripRelation(trip.uuid);
         relations.add(multimedia);
       }

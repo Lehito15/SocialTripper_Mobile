@@ -13,14 +13,12 @@ class PostPageBuildConfig {
     if (trip.postMultimediaUrls != null && trip.postMultimediaUrls!.isNotEmpty) {
       await Future.wait(trip.postMultimediaUrls!.map((uri) async {
         if (_isImage(uri)) {
-          print("Caching image: $uri");
           final image = CachedNetworkImageProvider(uri);
           await image.resolve(ImageConfiguration());
         } else if (_isVideo(uri)) {
-          print("Caching video: $uri");
           final controller = VideoPlayerController.network(uri);
           await controller.initialize();
-          controller.dispose(); // Zwolnij pamięć po wideo
+          controller.dispose();
         } else {
           print("Unsupported format: $uri");
         }
@@ -30,7 +28,7 @@ class PostPageBuildConfig {
 
 // Funkcje pomocnicze do identyfikacji typu pliku
   static bool _isImage(String uri) {
-    return uri.endsWith('.jpg') || uri.endsWith('.jpeg') || uri.endsWith('.png') || uri.endsWith('.jfif');
+    return uri.endsWith('.jpg') || uri.endsWith('.jpeg') || uri.endsWith('.png') || uri.endsWith('.jfif') || uri.endsWith('.webp');
   }
 
   static bool _isVideo(String uri) {
@@ -59,7 +57,6 @@ class PostPageBuildConfig {
   // }
 
   static Future<PostMasterModel?> retrieveBackendElement() {
-    print("retrieving");
     return PostRepository().retrieve();
   }
 }

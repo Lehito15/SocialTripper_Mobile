@@ -54,7 +54,6 @@ class TripService {
           for (var trip in decodedResponse) {
             TripMaster masterModel = TripMaster.fromJson(trip);
             trips.add(masterModel);  // Dodajemy trip do listy
-            print("jilding");
             yield List.from(trips);
           }
         } else {
@@ -75,11 +74,11 @@ class TripService {
     List<TripMaster> trips = [];
 
     try {
+      print("start get events");
       var response = await client.get(Uri.parse('$baseUrl/events'));
+      print("end get events");
       if (response.statusCode == 200) {
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
-        print(decodedResponse);
-
         if (decodedResponse is List) {
           for (var trip in decodedResponse) {
             TripMaster masterModel = TripMaster.fromJson(trip);

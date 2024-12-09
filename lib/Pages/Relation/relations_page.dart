@@ -1,5 +1,6 @@
 import 'dart:math';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:flutter_map_animations/flutter_map_animations.dart';
@@ -16,28 +17,6 @@ import '../../Services/relation_service.dart';
 import '../config/relation_page_build.dart';
 import '../generic_content_page.dart';
 
-List<TripMultimedia> generateRandomMultimedia(int count) {
-  final random = Random();
-
-  List<TripMultimedia> multimediaList = [];
-
-  for (int i = 0; i < count; i++) {
-    final multimedia = TripMultimedia(
-      // Losowy URL z Picsum
-      "https://picsum.photos/id/${random.nextInt(1000)}/200/300",
-      52.0 + random.nextDouble() * 10, // Losowa szerokość geograficzna
-      10.0 + random.nextDouble() * 10, // Losowa długość geograficzna
-      DateTime.now().subtract(Duration(days: random.nextInt(365))),
-      // Losowa data w ostatnim roku
-      "user-${random.nextInt(10000)}", // Losowy UUID użytkownika
-      "event-${random.nextInt(10000)}", // Losowy UUID wydarzenia
-    );
-    multimediaList.add(multimedia);
-  }
-
-  return multimediaList;
-}
-
 class RelationsPage extends StatefulWidget {
   const RelationsPage({super.key});
 
@@ -47,43 +26,20 @@ class RelationsPage extends StatefulWidget {
 
 class _RelationsPageState extends State<RelationsPage> {
   late GenericContentPage2<List<TripMultimedia>> content;
-  Future<List<List<TripMultimedia>>> fetchRelations() async {
-    return await RelationService().getAllRelations();
-  }
 
   @override
   void initState() {
     RelationService service = RelationService();
-    content = GenericContentPage2(retrieveContent: service.getAllRelationsStream, buildItem: RelationPageBuildConfig.buildItem, precachingStrategy: RelationPageBuildConfig.cachingStrategy);
+    content = GenericContentPage2(
+        retrieveContent: service.getAllRelationsStream,
+        buildItem: RelationPageBuildConfig.buildItem,
+        precachingStrategy: RelationPageBuildConfig.cachingStrategy);
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
     return content;
-    // return FutureBuilder<List<List<TripMultimedia>>>(
-    //   // Przekazujesz przyszłość (Future), która pobiera dane
-    //   future: fetchRelations(),
-    //   builder: (context, snapshot) {
-    //     // Sprawdź status połączenia
-    //     if (snapshot.connectionState == ConnectionState.waiting) {
-    //       return Center(child: CircularProgressIndicator()); // Ładowanie
-    //     } else if (snapshot.hasError) {
-    //       return Center(child: Text('Error: ${snapshot.error}')); // Obsługa błędów
-    //     } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-    //       return Center(child: Text('No relations found')); // Brak danych
-    //     }
-    //
-    //     // Zwróć ListView z danymi
-    //     final relations = snapshot.data!;
-    //     return ListView.builder(
-    //       itemCount: relations.length,
-    //       itemBuilder: (context, index) {
-    //         return Relation(relation: relations[index]);
-    //       },
-    //     );
-    //   },
-    // );
   }
 }
 
@@ -107,7 +63,6 @@ class _RelationState extends State<Relation> with TickerProviderStateMixin {
   void initState() {
     super.initState();
     _relation = widget.relation;
-    print("czrny $_relation");
     _pageController = PageController();
     _mapCenter = LatLng(_relation[0].latitude, _relation[0].longitude);
     _animatedMapController = AnimatedMapController(vsync: this);
@@ -127,10 +82,8 @@ class _RelationState extends State<Relation> with TickerProviderStateMixin {
 
     setState(() {
       activeIndex = index;
-      print(activeIndex);
     });
 
-    // Animowany ruch mapy
     _animatedMapController.animateTo(
       dest: newCenter,
       duration: const Duration(milliseconds: 500),
@@ -200,20 +153,17 @@ class _RelationSliderState extends State<RelationSlider> {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 4 / 3,
+      aspectRatio: 3 / 4,
       child: Stack(
         children: [
           PageView.builder(
             controller: widget.pageController,
             itemCount: widget.testMultimedia.length,
-            // Zmieniamy na widget.testMultimedia
             onPageChanged: widget.onPageChanged,
-            // Wywołanie metody, gdy zmienia się strona
             itemBuilder: (context, index) {
-              return Image.network(
-                widget.testMultimedia[index].multimediaUrl,
-                // Zmieniamy na widget.testMultimedia
-                fit: BoxFit.fitWidth, // Dostosowuje obraz do kontenera
+              return CachedNetworkImage(
+                imageUrl: widget.testMultimedia[index].multimediaUrl,
+                fit: BoxFit.fitHeight,
               );
             },
           ),
@@ -288,7 +238,6 @@ class _TripLocationsMapState extends State<TripLocationsMap> {
 
   @override
   Widget build(BuildContext context) {
-    print("aktif: ${widget.activeIndex}");
     return Container(
       height: 300,
       width: double.infinity,

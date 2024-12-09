@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_tripper_mobile/VM/app_viewmodel.dart';
 
-import '../Services/account_service.dart';
+import '../../Services/account_service.dart';
 
 class DataLoadingPage extends StatelessWidget {
   Future<void> _checkAccountStatus(BuildContext context) async {
@@ -16,27 +16,16 @@ class DataLoadingPage extends StatelessWidget {
     try {
       AppViewModel appViewModel =
       Provider.of<AppViewModel>(context, listen: false);
-      print("przed chekiem");
+
       await appViewModel.checkActiveTrip();
-      print("checking active trip");
 
-
-      // Jeśli dane o koncie udało się pobrać, przechodzimy do /home
       GoRouter.of(context).go('/home');
     } catch (e) {
-      // Obsługuje błąd, jeśli wystąpi
       print('Error while fetching account: $e');
 
-      // Wylogowujemy użytkownika
       await Amplify.Auth.signOut();
 
-      // Usuwamy zapisane UUID z SharedPreferences
       await prefs.remove('account_uuid');
-
-      // Pokazujemy komunikat o błędzie
-      ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Wystąpił błąd podczas ładowania danych, wylogowano'))
-      );
     }
   }
 
@@ -45,16 +34,14 @@ class DataLoadingPage extends StatelessWidget {
     return FutureBuilder<void>(
       future: _checkAccountStatus(context),
       builder: (context, snapshot) {
-        // Jeśli dane są w trakcie ładowania, wyświetlamy ekran ładowania
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Scaffold(
             body: Center(
-              child: CircularProgressIndicator(), // Pokazuje ładowanie
+              child: CircularProgressIndicator(),
             ),
           );
         }
 
-        // Jeśli wystąpił błąd podczas ładowania, pokazujemy błąd
         if (snapshot.hasError) {
           return Scaffold(
             body: Center(
@@ -63,7 +50,6 @@ class DataLoadingPage extends StatelessWidget {
           );
         }
 
-        // Domyślnie zwracamy pusty widget
         return SizedBox();
       },
     );
