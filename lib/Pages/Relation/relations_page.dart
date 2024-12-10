@@ -270,6 +270,13 @@ class _TripLocationsMapState extends State<TripLocationsMap> {
             urlTemplate: "https://tile.openstreetmap.org/{z}/{x}/{y}.png",
             userAgentPackageName: 'com.example.app',
           ),
+          PolylineLayer(polylines: [
+            Polyline(
+              points: widget.pathPoints,
+              strokeWidth: 4.0,
+              color: Colors.blue,
+            )
+          ]),
           MarkerLayer(
             markers: [
               // Tworzymy listę markerów, w której aktywny marker jest na końcu
@@ -310,13 +317,6 @@ class _TripLocationsMapState extends State<TripLocationsMap> {
                 ),
             ],
           ),
-          PolylineLayer(polylines: [
-            Polyline(
-              points: widget.pathPoints,
-              strokeWidth: 4.0,
-              color: Colors.blue,
-            )
-          ])
         ],
       ),
     );

@@ -5,27 +5,43 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:go_router/go_router.dart';
 import 'package:social_tripper_mobile/VM/app_viewmodel.dart';
 
+import '../../Models/Account/account.dart';
 import '../../Services/account_service.dart';
 
 class DataLoadingPage extends StatelessWidget {
   Future<void> _checkAccountStatus(BuildContext context) async {
     AccountService service = AccountService();
     SharedPreferences prefs = await SharedPreferences.getInstance();
-    await service.getCurrentAccount();
 
     try {
-      AppViewModel appViewModel =
-      Provider.of<AppViewModel>(context, listen: false);
+      Account account = await service.getCurrentAccount();
+      print("Account loaded successfully");
+    } catch (e) {
+      print("Error fetching account: $e");
+      await Amplify.Auth.signOut();
+      return;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        print("przechodze 1");
+        GoRouter.of(context).go('/complete_register');
+      });
+      return; // Zatrzymujemy dalsze wykonanie
+    }
 
+    print("here");
+    try {
+      AppViewModel appViewModel = Provider.of<AppViewModel>(context, listen: false);
       await appViewModel.checkActiveTrip();
-
-      GoRouter.of(context).go('/home');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        GoRouter.of(context).go('/home');
+      });
     } catch (e) {
       print('Error while fetching account: $e');
-
       await Amplify.Auth.signOut();
-
       await prefs.remove('account_uuid');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        print("przechodze 2");
+        GoRouter.of(context).go('/complete_register');
+      });
     }
   }
 
@@ -42,15 +58,15 @@ class DataLoadingPage extends StatelessWidget {
           );
         }
 
+        // Obsługuje błędy w przypadku, gdy wystąpił wyjątek
         if (snapshot.hasError) {
-          return Scaffold(
-            body: Center(
-              child: Text('Wystąpił błąd podczas ładowania danych'),
-            ),
-          );
+          print('Error: ${snapshot.error}');
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            context.go('/complete_register');
+          });
         }
 
-        return SizedBox();
+        return SizedBox(); // Pusta strona, gdy dane zostały załadowane poprawnie
       },
     );
   }

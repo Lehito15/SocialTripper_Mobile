@@ -4,8 +4,10 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:social_tripper_mobile/Components/FAB/active_trip_fab.dart';
+import 'package:social_tripper_mobile/Components/Shared/authorization_logo_header.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
+import 'package:social_tripper_mobile/Pages/Authorization/complete_account_information_page.dart';
 import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Pages/home_page.dart';
 import 'package:social_tripper_mobile/Pages/post_comments_page.dart';
@@ -194,6 +196,13 @@ final GoRouter router = GoRouter(
                   return PostCommentsPage(
                       postMaster!, likeCallback!, commentCallback!);
                 })
+          ]),
+          StatefulShellBranch(routes: <RouteBase>[
+            GoRoute(
+                path: '/complete_register',
+                builder: (context, state) {
+                  return CompleteAccountInformationPage();
+                })
           ])
         ])
   ],
@@ -315,35 +324,7 @@ class CustomScaffold extends StatelessWidget {
               ),
               Padding(
                 padding: const EdgeInsets.only(top: 32),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Container(
-                      width: 70,
-                      height: 70,
-                      child: SvgPicture.asset("assets/icons/main_logo.svg"),
-                    ),
-                    SizedBox(
-                      width: 10,
-                    ),
-                    Text(
-                      "SocialTripper",
-                      style: TextStyle(
-                        fontSize: 32,
-                        shadows: [
-                          Shadow(
-                            offset: Offset(-1, 1),
-                            // Wektor przesunięcia cienia (x, y)
-                            blurRadius: 1,
-                            // Promień rozmycia cienia
-                            color: Colors.black.withOpacity(
-                                0.25), // Kolor cienia (możesz dostosować przezroczystość)
-                          ),
-                        ],
-                      ),
-                    )
-                  ],
-                ),
+                child: AuthorizationLogoHeader(),
               ),
               SizedBox(
                 height: 35,
@@ -359,4 +340,5 @@ class CustomScaffold extends StatelessWidget {
       persistentFooterButtons: footer != null ? [footer!] : null,
     );
   }
+
 }

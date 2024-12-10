@@ -40,7 +40,7 @@ class AccountService {
   }
 
 
-  Future<void> getCurrentAccount() async {
+  Future<Account> getCurrentAccount() async {
     try {
       // Pobierz atrybuty użytkownika (np. email)
       final userAttributes = await Amplify.Auth.fetchUserAttributes();
@@ -56,6 +56,7 @@ class AccountService {
 
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('account_uuid', account.uuid);
+        return account;
 
       } else {
         throw Exception('Failed to load account: ${response.statusCode}');
