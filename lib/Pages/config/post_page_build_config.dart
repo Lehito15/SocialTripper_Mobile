@@ -45,10 +45,7 @@ class PostPageBuildConfig {
       child: PostMaster(postMasterModel),
     );
 
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 9.0),
-      child: post,
-    );
+    return post;
   }
 
   // static Future<PostMasterModel> retrieveGeneratedElement() {

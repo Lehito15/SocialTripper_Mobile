@@ -16,6 +16,7 @@ import 'package:social_tripper_mobile/Models/Trip/trip_thumbnail.dart';
 import 'package:social_tripper_mobile/Models/Trip/user_trip_request.dart';
 import 'package:http_parser/http_parser.dart';
 import '../Pages/config/data_retrieving_config.dart';
+import 'account_service.dart';
 
 class TripService {
   final String baseUrl = DataRetrievingConfig.sourceUrl;
@@ -23,7 +24,7 @@ class TripService {
 
   Future<List<AccountThumbnail>> getEventMembers(String eventUUID) async {
     final url = Uri.parse('$baseUrl/events/$eventUUID/members');
-
+    print("getting even members");
     try {
       final response = await http.get(url);
 
@@ -42,7 +43,18 @@ class TripService {
   }
 
 
+  Future<void> _setAdditionalInfo(TripMaster model, String? currentUserUUID) async {
+    bool isOwner = model.owner.uuid == currentUserUUID;
+    bool isRequested = await isTripRequested(model.uuid, currentUserUUID!);
+    bool isMember = await isTripMember(model.uuid, currentUserUUID!);
+    model.isOwner = isOwner;
+    model.isRequested = isRequested;
+    model.isMember = isMember;
+  }
+
+
   Stream<List<TripMaster>> loadAllTripsStream() async* {
+    String? currentUserUUID = await AccountService().getSavedAccountUUID();
     var client = http.Client();
     List<TripMaster> trips = [];
 
@@ -53,6 +65,7 @@ class TripService {
         if (decodedResponse is List) {
           for (var trip in decodedResponse) {
             TripMaster masterModel = TripMaster.fromJson(trip);
+            await _setAdditionalInfo(masterModel, currentUserUUID);
             trips.add(masterModel);  // Dodajemy trip do listy
             yield List.from(trips);
           }
@@ -71,6 +84,7 @@ class TripService {
 
   Future<List<TripMaster>> loadAllTrips() async {
     var client = http.Client();
+    String? currentUserUUID = await AccountService().getSavedAccountUUID();
     List<TripMaster> trips = [];
 
     try {
@@ -82,6 +96,7 @@ class TripService {
         if (decodedResponse is List) {
           for (var trip in decodedResponse) {
             TripMaster masterModel = TripMaster.fromJson(trip);
+            await _setAdditionalInfo(masterModel, currentUserUUID);
             trips.add(masterModel);
           }
         } else {
@@ -357,6 +372,77 @@ class TripService {
       }
     } catch (e) {
       print('Error uploading multimedia: $e');
+    }
+  }
+
+  Future<void> removeUserFromEvent(UserTripRequest request) async {
+    // Adres API
+    final url = Uri.parse('$baseUrl/events/remove-member');
+
+    // Nagłówki żądania
+    final headers = {
+      'Content-Type': 'application/json',
+    };
+
+    // Konwertowanie modelu UserTripRequest do JSON
+    final body = jsonEncode({
+      'userUUID': request.userUUID,
+      'eventUUID': request.eventUUID,
+      'message': request.message
+    });
+
+    try {
+      // Wysyłanie żądania DELETE
+      final response = await http.delete(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      // Obsługa odpowiedzi
+      if (response.statusCode == 200) {
+        final responseData = jsonDecode(response.body);
+        // Możesz przetworzyć `responseData` zgodnie z potrzebami
+        print('User removed successfully: $responseData');
+      } else {
+        // Obsługa błędów
+        print('Failed to remove user. Status code: ${response.statusCode}');
+        print('Response: ${response.body}');
+        throw Exception('Failed to remove user from event');
+      }
+    } catch (e) {
+      // Obsługa wyjątków
+      print('Error removing user: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> removeUserApplyForTrip(UserTripRequest request) async {
+    final url = Uri.parse('$baseUrl/events/request');
+    final headers = {'Content-Type': 'application/json'};
+
+    // Konwertujemy obiekt `UserTripRequest` na JSON
+    final body = jsonEncode({
+      'userUUID': request.userUUID, // Zakładając, że masz pola w obiekcie
+      'eventUUID': request.eventUUID,
+      'message': request.message
+    });
+
+    try {
+      final response = await http.delete(
+        url,
+        headers: headers,
+        body: body,
+      );
+
+      if (response.statusCode == 200) {
+        print('Request removed successfully!');
+      } else {
+        print('Failed to remove request. Status code: ${response.statusCode}');
+        print('Response: ${response.body}');
+      }
+    } catch (e) {
+      print('Error occurred: $e');
     }
   }
 }

@@ -28,6 +28,9 @@ class TripMaster {
   String? iconUrl;
   Set<RequiredActivity> activities;
   Set<RequiredLanguage> languages;
+  bool isMember = false;
+  bool isOwner = false;
+  bool isRequested = false;
 
   TripMaster(this.uuid,
       this.name,

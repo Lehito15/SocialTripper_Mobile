@@ -12,6 +12,7 @@ import 'package:get_thumbnail_video/video_thumbnail.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_status.dart';
@@ -26,6 +27,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:collection/collection.dart';
 import 'package:http/http.dart' as http;
 import 'package:connectivity_plus/connectivity_plus.dart';
+
+import '../VM/app_viewmodel.dart';
 
 
 class TripInterface extends StatefulWidget {
@@ -84,6 +87,8 @@ class _TripInterfaceState extends State<TripInterface> {
 
   final _messageQueue = StreamController<Map<String, dynamic>>(); // Kolejka wiadomości
   bool _isProcessingMessage = false;
+
+  bool _isEndingTrip = false;
 
 
   Timer? timer;
@@ -431,7 +436,10 @@ class _TripInterfaceState extends State<TripInterface> {
     });
   }
 
-  void stopAsLeader() {
+  void stopAsLeader() async {
+    setState(() {
+      _isEndingTrip = true;
+    });
     final tripService = TripService();
     final stopMessage = jsonEncode({
       'trip_id': tripId,
@@ -440,11 +448,13 @@ class _TripInterfaceState extends State<TripInterface> {
     client.sendMessage(stopMessage);
 
     sendFiles();
-    tripService.setTripStatus(widget.trip.uuid, TripStatus("finished"));
+    await tripService.setTripStatus(widget.trip.uuid, TripStatus("finished"));
     stopClient();
   }
 
   void stopClient() async {
+    AppViewModel appViewModel =
+    Provider.of<AppViewModel>(context, listen: false);
     client.disconnect();
     timer?.cancel();
     setState(() {
@@ -458,7 +468,7 @@ class _TripInterfaceState extends State<TripInterface> {
       lastReceivedId = "0";
       receivedIds = [];
     });
-
+    appViewModel.clearFinishTripCallback();
     await saveState();
     context.go("/home");
   }
@@ -784,80 +794,85 @@ class _TripInterfaceState extends State<TripInterface> {
         backgroundColor: Color(0xffF0F2F5),
         body: Column(
           children: <Widget>[
+            Text("$_isEndingTrip"),
             Text(tripId),
             Text("$isLeader"),
             Text("${widget.trip.name}"),
-            Padding(
-              padding: const EdgeInsets.all(0.0),
-              child: Column(
-                children: [
-                  //debugLocationComponent(locationMessage),
-                  if (isTripNotStarted)
+            Column(
+              children: [
+                //debugLocationComponent(locationMessage),
+                if (isTripNotStarted)
 
-                  // wyekstrachowac do komponentow
-                    ElevatedButton(
-                      onPressed: () {
-                        // takie rzeczy na pewno wyekstrahować do osobnych metod
-                        _getCurrentLocation().then((value) {
-                          lat = '${value.latitude}';
-                          long = '${value.longitude}';
-                          setState(() {
-                            locationMessage =
-                            'Latitude: $lat, Longitude: $long';
-                            isTripNotStarted = false;
-                          });
-
-                          mapController.move(LatLng(value.latitude,
-                              value.longitude), 20.0);
-                          saveState();
-                          start();
-                          if (isLeader) {
-                            startAsLeader();
-                            _liveLocation();
-                          }
-                          else {
-                            startAsParticipant();
-                            _liveLocation();
-                          }
+                // wyekstrachowac do komponentow
+                  ElevatedButton(
+                    onPressed: () {
+                      _isEndingTrip = false;
+                      _getCurrentLocation().then((value) {
+                        lat = '${value.latitude}';
+                        long = '${value.longitude}';
+                        setState(() {
+                          locationMessage =
+                          'Latitude: $lat, Longitude: $long';
+                          isTripNotStarted = false;
                         });
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                      ),
-                      child: const Text(
-                        "Start trip",
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xffBDF271)
-                        ),
-                      ),
-                    ),
-                  if (!isTripNotStarted)
-                    ElevatedButton(
-                      onPressed: () {
-                        if (client.isConnected() && isLeader) {
-                          stopLiveLocation();
-                          stopAsLeader();
-                        } else if (!isLeader) {
-                          stopLiveLocation();
-                          stopClient();
+
+                        mapController.move(LatLng(value.latitude,
+                            value.longitude), 20.0);
+                        saveState();
+                        start();
+                        if (isLeader) {
+                          startAsLeader();
+                          _liveLocation();
                         }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                      ),
-                      child: const Text(
-                        "End trip",
-                        style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xffBDF271)
-                        ),
+                        else {
+                          startAsParticipant();
+                          _liveLocation();
+                        }
+                      });
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                    ),
+                    child: const Text(
+                      "Start trip",
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xffBDF271)
                       ),
                     ),
-                ],
-              ),
+                  ),
+                if (!isTripNotStarted)
+                  ElevatedButton(
+                    onPressed: () {
+                      AppViewModel appViewModel =
+                      Provider.of<AppViewModel>(context, listen: false);
+                      //client.isConnected() &&
+                      print(_isEndingTrip);
+                      if (isLeader && !_isEndingTrip) {
+                        if (appViewModel.finishTripCallback != null) {
+                          appViewModel.finishTripCallback!();
+                        }
+                        stopLiveLocation();
+                        stopAsLeader();
+                      } else if (!isLeader && !_isEndingTrip) {
+                        stopLiveLocation();
+                        stopClient();
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                    ),
+                    child: const Text(
+                      "End trip",
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xffBDF271)
+                      ),
+                    ),
+                  ),
+              ],
             ),
             Expanded(
               child: SizedBox(

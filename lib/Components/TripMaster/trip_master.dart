@@ -32,9 +32,34 @@ class _TripMasterViewState extends State<TripMasterView> {
     trip = widget.trip;
   }
 
-  void onLeaveTrip() {
+  void onRemoveFromTrip() {
+    print("on remove");
     setState(() {
       trip.numberOfParticipants--;
+    });
+  }
+
+  void onAcceptToTrip() {
+    print("on remove");
+    setState(() {
+      trip.numberOfParticipants++;
+    });
+  }
+
+  void onLeaveTrip() {
+    print("on leave");
+    setState(() {
+      trip.numberOfParticipants--;
+      trip.isMember = false;
+    });
+  }
+
+  void goTripDetail() {
+    context.push('/trips/detail', extra: {
+      'trip': trip,
+      'onRemoveFromTrip': onRemoveFromTrip,
+      'onAcceptToTrip': onAcceptToTrip,
+      'onLeaveTrip': onLeaveTrip,
     });
   }
 
@@ -43,16 +68,7 @@ class _TripMasterViewState extends State<TripMasterView> {
   Widget build(BuildContext context) {
     return GestureDetector(
       onTap: () async {
-        String? loggedUserUUID = await AccountService().getSavedAccountUUID();
-        bool? isMember = await TripService().isTripMember(trip.uuid, loggedUserUUID!);
-        bool? isRequested = await TripService().isTripRequested(trip.uuid, loggedUserUUID!);
-        context.push('/trips/detail', extra: {
-          'trip': trip,
-          'isOwner': loggedUserUUID == trip.owner.uuid,
-          'isMember' : isMember,
-          'isRequested': isRequested,
-          'onLeaveTrip': onLeaveTrip,
-        });
+        goTripDetail();
       },
       child: Container(
         decoration: const BoxDecoration(
@@ -63,7 +79,7 @@ class _TripMasterViewState extends State<TripMasterView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              TripTopBarMaster(location: trip.destination),
+              TripTopBarMaster(trip: trip),
               const SizedBox(height: 9),
               ClipRRect(
                 borderRadius: BorderRadius.circular(10),

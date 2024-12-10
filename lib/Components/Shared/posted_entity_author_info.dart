@@ -6,10 +6,12 @@ class PostedEntityAuthorTextInfo extends StatelessWidget {
   final double spacing;
   final double topSize;
   final double bottomSize;
+  final void Function() redirect;
 
   PostedEntityAuthorTextInfo({
     required this.topString,
     required this.bottomString,
+    required this.redirect,
     this.spacing = 2,
     this.topSize = 15,
     this.bottomSize = 10,
@@ -18,30 +20,35 @@ class PostedEntityAuthorTextInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            topString,
-            style: TextStyle(
-              height: 1,
-              fontFamily: "Source Sans 3",
-              fontWeight: FontWeight.w600,
-              fontSize: topSize,
+      child: GestureDetector(
+        onTap: () {
+          redirect();
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              topString,
+              style: TextStyle(
+                height: 1,
+                fontFamily: "Source Sans 3",
+                fontWeight: FontWeight.w600,
+                fontSize: topSize,
+              ),
             ),
-          ),
-          SizedBox(height: spacing),
-          Text(
-            bottomString,
-            style: TextStyle(
-              height: 1,
-              fontFamily: "Source Sans 3",
-              fontWeight: FontWeight.w600,
-              fontSize: bottomSize,
-              color: Colors.black.withOpacity(0.55),
+            SizedBox(height: spacing),
+            Text(
+              bottomString,
+              style: TextStyle(
+                height: 1,
+                fontFamily: "Source Sans 3",
+                fontWeight: FontWeight.w600,
+                fontSize: bottomSize,
+                color: Colors.black.withOpacity(0.55),
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -25,7 +25,7 @@ class TripPageBuildConfig {
     );
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 9.0),
+      padding: const EdgeInsets.only(bottom: 9),
       child: clickableTrip,
     );
   }

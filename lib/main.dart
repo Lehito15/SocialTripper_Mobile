@@ -87,7 +87,7 @@ final GoRouter router = GoRouter(
         return Consumer<AppViewModel>(builder: (context, appViewModel, child) {
           return Scaffold(
             appBar: CustomAppBar(context),
-            backgroundColor: const Color(0xFFF0F2F5),
+            backgroundColor: const Color(0xFFF6F7F9),
             body: navigationShell,
             bottomNavigationBar: CustomBottomNavBar(),
             floatingActionButton: appViewModel.isActiveTripVisible
@@ -121,17 +121,18 @@ final GoRouter router = GoRouter(
                     builder: (context, state) {
                       final data = state.extra as Map<String, dynamic>?;
                       final tripMaster = data?['trip'] as TripMaster;
-                      final isOwner = data?['isOwner'] as bool;
-                      final isMember = data?['isMember'] as bool;
-                      final isRequested = data?['isRequested'] as bool;
                       final onLeaveTrip =
                           data?['onLeaveTrip'] as void Function();
+                      final onAcceptToTrip =
+                          data?['onAcceptToTrip'] as void Function();
+                      final onRemoveFromTrip =
+                          data?['onRemoveFromTrip'] as void Function();
                       return TripDetailPage(
-                          trip: tripMaster,
-                          isOwner: isOwner,
-                          isMember: isMember,
-                          isRequested: isRequested,
-                          onLeaveTrip: onLeaveTrip);
+                        trip: tripMaster,
+                        onLeaveTrip: onLeaveTrip,
+                        onAcceptToTrip: onAcceptToTrip,
+                        onRemoveFromTrip: onRemoveFromTrip
+                      );
                     })
               ]),
         ]),

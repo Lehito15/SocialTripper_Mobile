@@ -15,7 +15,7 @@ import 'package:video_player/video_player.dart';
 import '../Shared/interactions.dart';
 import 'BuildingBlocks/post_master_bottom.dart';
 import 'BuildingBlocks/post_text_content.dart';
-import 'BuildingBlocks/trip_master_top_bar.dart';
+import 'BuildingBlocks/post_master_top_bar.dart';
 
 class PostMaster extends StatefulWidget {
   final PostMasterModel model;
@@ -153,9 +153,8 @@ class _PostMasterState extends State<PostMaster> {
             children: [
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
-                child: TripMasterTopBar(
-                  widget.model.account,
-                  widget.model.dateOfPost,
+                child: PostMasterTopBar(
+                  widget.model
                 ),
               ),
               SizedBox(height: 9),
@@ -168,6 +167,7 @@ class _PostMasterState extends State<PostMaster> {
                       ),
                     )
                   : Container(),
+              widget.model.postMultimediaUrls.length > 0 ? SizedBox(height: 9,) : SizedBox(height: 0,),
               PostMedia(widget.model.postMultimediaUrls),
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:tuple/tuple.dart';
 
 Container BorderedUserPicture({
@@ -25,7 +26,12 @@ Container BorderedUserPicture({
       ],
     ),
     child: ClipOval(
-      child: pictureURI.startsWith('http') || pictureURI.startsWith('https')
+      child: pictureURI.endsWith('.svg') // Sprawdzamy, czy obraz to SVG
+          ? SvgPicture.asset(
+        pictureURI,
+        fit: BoxFit.cover,
+      )
+          : pictureURI.startsWith('http') || pictureURI.startsWith('https')
           ? Image.network(
         pictureURI,
         fit: BoxFit.cover,

@@ -9,54 +9,100 @@ import '../../../Components/Shared/posted_entity_author_info.dart';
 import '../../../Components/Shared/profile_thumbnail.dart';
 import '../../../Components/Shared/titled_section_medium_bordered.dart';
 
-class Requests extends StatelessWidget {
+class Requests extends StatefulWidget {
   final TripMaster trip;
   final Future<List<AccountThumbnail>> requestsFuture;
   final void Function() onAccept;
   final void Function() onDecline;
 
-  Requests(this.trip, this.requestsFuture, this.onAccept, this.onDecline);
+  const Requests({
+    super.key,
+    required this.trip,
+    required this.requestsFuture,
+    required this.onAccept,
+    required this.onDecline,
+  });
+
+  @override
+  State<Requests> createState() => _RequestsState();
+}
+
+class _RequestsState extends State<Requests> {
+  late List<AccountThumbnail> requests = [];
+  bool isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRequests();
+  }
+
+  Future<void> _loadRequests() async {
+    try {
+      final fetchedRequests = await widget.requestsFuture;
+      setState(() {
+        requests = fetchedRequests;
+        isLoading = false;
+      });
+    } catch (error) {
+      print("Error fetching requests: $error");
+      setState(() {
+        isLoading = false;
+      });
+    }
+  }
+
+  void _acceptRequest(AccountThumbnail request) {
+    widget.onAccept();
+    setState(() {
+      requests.remove(request);
+    });
+  }
+
+  void _declineRequest(AccountThumbnail request) async {
+    widget.onDecline();
+    setState(() {
+      requests.remove(request);
+    });
+    final UTrequest = UserTripRequest(request.uuid, widget.trip.uuid, "remove");
+    await TripService().removeUserApplyForTrip(UTrequest);
+  }
 
   @override
   Widget build(BuildContext context) {
+    if (isLoading) {
+      return Center(child: CircularProgressIndicator());
+    }
+
+    if (requests.isEmpty) {
+      return Center(child: Text('No requests available.'));
+    }
+
     return Column(
       children: [
         TitledSectionMediumBordered(
           title: "Requests",
           padding: EdgeInsets.symmetric(horizontal: 9),
           spacing: 9,
-          child: FutureBuilder<List<AccountThumbnail>>(
-            future: requestsFuture,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState == ConnectionState.waiting) {
-                return Center(child: CircularProgressIndicator());
-              } else if (snapshot.hasError) {
-                return Center(child: Text('Error: ${snapshot.error}'));
-              } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                return Center(child: Text('No requests available.'));
-              } else {
-                final requests = snapshot.data!;
-
-                return Column(
-                  children: [
-                    ListView.separated(
-                      shrinkWrap: true,
-                      // Unika błędów z układem w Column
-                      physics: NeverScrollableScrollPhysics(),
-                      // Wyłącza przewijanie dla ListView
-                      itemCount: requests.length,
-                      itemBuilder: (context, index) {
-                        final AccountThumbnail request = requests[index];
-                        return TripRequest(trip, request, onAccept, onDecline);
-                      },
-                      separatorBuilder: (context, index) =>
-                          SizedBox(height: 13),
-                    ),
-                    SizedBox(height: 9),
-                  ],
-                );
-              }
-            },
+          child: Column(
+            children: [
+              ListView.separated(
+                shrinkWrap: true,
+                physics: NeverScrollableScrollPhysics(),
+                itemCount: requests.length,
+                itemBuilder: (context, index) {
+                  final request = requests[index];
+                  return TripRequest(
+                    widget.trip,
+                    request,
+                        () => _acceptRequest(request),
+                        () => _declineRequest(request),
+                  );
+                },
+                separatorBuilder: (context, index) => SizedBox(height: 13),
+              ),
+              SizedBox(height: 9),
+            ],
           ),
         ),
       ],
@@ -78,6 +124,7 @@ Row TripRequest(TripMaster trip, AccountThumbnail user,
         spacing: 4,
         topSize: 16,
         bottomSize: 11,
+        redirect: () {},
       ),
       Expanded(child: Container()),
       Column(

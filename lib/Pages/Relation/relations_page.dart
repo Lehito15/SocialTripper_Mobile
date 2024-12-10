@@ -8,11 +8,14 @@ import 'package:latlong2/latlong.dart';
 import 'package:social_tripper_mobile/Components/Post/BuildingBlocks/post_photo.dart';
 import 'package:social_tripper_mobile/Components/Shared/posted_entity_author_info.dart';
 import 'package:social_tripper_mobile/Components/Shared/profile_thumbnail.dart';
+import 'package:social_tripper_mobile/Models/Relation/relation.dart';
+import 'package:social_tripper_mobile/Models/Shared/page_tab.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_multimedia.dart';
 import 'package:social_tripper_mobile/Pages/Relation/my_marker.dart';
 import 'package:social_tripper_mobile/Pages/TripDetail/Subpages/trip_detail_details.dart';
 import 'package:social_tripper_mobile/Utilities/Converters/distance_converter.dart';
 
+import '../../Services/account_service.dart';
 import '../../Services/relation_service.dart';
 import '../config/relation_page_build.dart';
 import '../generic_content_page.dart';
@@ -25,7 +28,7 @@ class RelationsPage extends StatefulWidget {
 }
 
 class _RelationsPageState extends State<RelationsPage> {
-  late GenericContentPage2<List<TripMultimedia>> content;
+  late GenericContentPage2<RelationModel> content;
 
   @override
   void initState() {
@@ -33,7 +36,15 @@ class _RelationsPageState extends State<RelationsPage> {
     content = GenericContentPage2(
         retrieveContent: service.getAllRelationsStream,
         buildItem: RelationPageBuildConfig.buildItem,
-        precachingStrategy: RelationPageBuildConfig.cachingStrategy);
+        precachingStrategy: RelationPageBuildConfig.cachingStrategy,
+        tabs: [
+          PageTab<RelationModel>(
+              "All relations", (RelationModel relation) => true),
+          PageTab<RelationModel>("My relations", (RelationModel relation) {
+            print(relation.associatedTrip);
+            return relation.associatedTrip.isMember;
+          }),
+        ]);
     super.initState();
   }
 
@@ -46,14 +57,14 @@ class _RelationsPageState extends State<RelationsPage> {
 class Relation extends StatefulWidget {
   const Relation({super.key, required this.relation});
 
-  final List<TripMultimedia> relation;
+  final RelationModel relation;
 
   @override
   State<Relation> createState() => _RelationState();
 }
 
 class _RelationState extends State<Relation> with TickerProviderStateMixin {
-  late List<TripMultimedia> _relation;
+  late RelationModel _relation;
   late PageController _pageController;
   late LatLng _mapCenter;
   late AnimatedMapController _animatedMapController;
@@ -64,7 +75,8 @@ class _RelationState extends State<Relation> with TickerProviderStateMixin {
     super.initState();
     _relation = widget.relation;
     _pageController = PageController();
-    _mapCenter = LatLng(_relation[0].latitude, _relation[0].longitude);
+    _mapCenter =
+        LatLng(_relation.media[0].latitude, _relation.media[0].longitude);
     _animatedMapController = AnimatedMapController(vsync: this);
   }
 
@@ -76,8 +88,8 @@ class _RelationState extends State<Relation> with TickerProviderStateMixin {
 
   void _onPageChanged(int index) {
     final newCenter = LatLng(
-      _relation[index].latitude,
-      _relation[index].longitude,
+      _relation.media[index].latitude,
+      _relation.media[index].longitude,
     );
 
     setState(() {
@@ -101,33 +113,36 @@ class _RelationState extends State<Relation> with TickerProviderStateMixin {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Column(
-          children: [
-            RelationProfileThumbnail(
-              "test",
-              "https://picsum.photos/id/237/200/300",
-              4,
-              DateTime(2024, 12, 12, 12, 12),
-              DateTime(2024, 12, 12, 12, 12),
-            ),
-            RelationSlider(
-              pageController: _pageController,
-              onPageChanged: _onPageChanged,
-              testMultimedia: _relation, // Przekazujemy multimedia do slidera
-            ),
-            TripLocationsMap(
-                points: _relation,
-                mapCenter: _mapCenter,
-                mapController: _animatedMapController.mapController,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+      ),
+      child: Column(
+        children: [
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 9),
+                child: RelationProfileThumbnail(_relation, context),
+              ),
+              RelationSlider(
                 pageController: _pageController,
-                onMarkerTapped: _onMarkerTapped,
-                activeIndex: activeIndex),
-            // Przekazujemy mapę z danymi i współrzędnymi
-          ],
-        ),
-      ],
+                onPageChanged: _onPageChanged,
+                testMultimedia:
+                    _relation.media, // Przekazujemy multimedia do slidera
+              ),
+              TripLocationsMap(
+                  points: _relation.media,
+                  mapCenter: _mapCenter,
+                  mapController: _animatedMapController.mapController,
+                  pageController: _pageController,
+                  onMarkerTapped: _onMarkerTapped,
+                  activeIndex: activeIndex),
+              // Przekazujemy mapę z danymi i współrzędnymi
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -153,7 +168,7 @@ class _RelationSliderState extends State<RelationSlider> {
   @override
   Widget build(BuildContext context) {
     return AspectRatio(
-      aspectRatio: 3 / 4,
+      aspectRatio: 3.5 / 4,
       child: Stack(
         children: [
           PageView.builder(
@@ -163,7 +178,7 @@ class _RelationSliderState extends State<RelationSlider> {
             itemBuilder: (context, index) {
               return CachedNetworkImage(
                 imageUrl: widget.testMultimedia[index].multimediaUrl,
-                fit: BoxFit.fitHeight,
+                fit: BoxFit.fitWidth,
               );
             },
           ),
@@ -239,7 +254,7 @@ class _TripLocationsMapState extends State<TripLocationsMap> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      height: 300,
+      height: 225,
       width: double.infinity,
       child: FlutterMap(
         mapController: widget.mapController,

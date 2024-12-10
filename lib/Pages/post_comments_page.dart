@@ -122,7 +122,8 @@ class _PostCommentsPageState extends State<PostCommentsPage> {
                     widget.commentCallback();
                     numComments++;
                   });
-                }),
+                },
+                authorFuture: AccountService().getMyAccount(),),
               )
             ],
           ),

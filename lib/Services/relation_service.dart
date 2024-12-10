@@ -5,6 +5,7 @@ import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_multimedia.dart';
 import 'package:social_tripper_mobile/Services/trip_service.dart';
 
+import '../Models/Relation/relation.dart';
 import '../Pages/config/data_retrieving_config.dart';
 
 class RelationService {
@@ -12,8 +13,8 @@ class RelationService {
   final TripService tripService = TripService();
 
 
-  Future<List<TripMultimedia>> getTripRelation(String tripUUID) async {
-    final String url = '$baseUrl/events/$tripUUID/multimedia';
+  Future<RelationModel> getTripRelation(TripMaster trip) async {
+    final String url = '$baseUrl/events/${trip.uuid}/multimedia';
 
     try {
       // Wysyłamy zapytanie GET
@@ -25,7 +26,7 @@ class RelationService {
         List<TripMultimedia> multimediaList = data
             .map((json) => TripMultimedia.fromJson(json))  // Mapowanie na obiekt TripMultimedia
             .toList();
-        return multimediaList;
+        return RelationModel(trip, multimediaList);
       } else {
         print('Failed to load multimedia. Status code: ${response.statusCode}');
         throw Exception('Failed to load multimedia');
@@ -37,15 +38,15 @@ class RelationService {
   }
 
 
-  Stream<List<List<TripMultimedia>>> getAllRelationsStream() async* {
-    List<List<TripMultimedia>> allRelations = [];
+  Stream<List<RelationModel>> getAllRelationsStream() async* {
+    List<RelationModel> allRelations = [];
     print("start get all relations");
     List<TripMaster> trips = await tripService.loadAllTrips();
     print("got all trips");
     for (var trip in trips) {
       if (trip.eventStatus.status == 'finished') {
         try {
-          List<TripMultimedia> relation = await getTripRelation(trip.uuid);
+          RelationModel relation = await getTripRelation(trip);
           allRelations.add(relation);
 
           yield allRelations;
@@ -59,14 +60,14 @@ class RelationService {
     print("end get all relations");
   }
 
-  Future<List<List<TripMultimedia>>> getAllRelations() async {
-    List<List<TripMultimedia>> relations = [];
+  Future<List<RelationModel>> getAllRelations() async {
+    List<RelationModel> relations = [];
     List<TripMaster> trips = await tripService.loadAllTrips();
 
     for (var trip in trips) {
       if (trip.eventStatus.status == 'finished') {
-        List<TripMultimedia> multimedia = await getTripRelation(trip.uuid);
-        relations.add(multimedia);
+        RelationModel relation = await getTripRelation(trip);
+        relations.add(relation);
       }
     }
     return relations;

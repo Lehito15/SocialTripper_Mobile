@@ -16,6 +16,30 @@ import '../Pages/config/data_retrieving_config.dart';
 class AccountService {
   final baseUrl = "${DataRetrievingConfig.sourceUrl}/accounts";
 
+
+  Future<AccountThumbnail> getMyAccount() async {
+    try {
+      final userAttributes = await Amplify.Auth.fetchUserAttributes();
+      final email = userAttributes[0].value;
+      final url = "$baseUrl/email?email=$email";
+      var client = http.Client();
+      var response = await client.get(Uri.parse(url));
+
+      if (response.statusCode == 200) {
+        // Przetwórz odpowiedź JSON
+        var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
+        AccountThumbnail account = AccountThumbnail.fromJson(decodedResponse);
+        return account;
+      } else {
+        throw Exception('Failed to load account: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error fetching account: $e');
+      throw Exception('Error fetching account: $e');
+    }
+  }
+
+
   Future<void> getCurrentAccount() async {
     try {
       // Pobierz atrybuty użytkownika (np. email)

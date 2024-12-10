@@ -2,6 +2,7 @@ import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
+import 'package:social_tripper_mobile/Models/Shared/page_tab.dart';
 import 'package:social_tripper_mobile/Models/User/current_user.dart';
 import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Pages/config/post_page_build_config.dart';
@@ -36,6 +37,10 @@ class _HomePageState extends State<HomePage> {
       retrieveContent: service.loadAllPostsStream,
       buildItem: PostPageBuildConfig.buildItem,
       precachingStrategy: PostPageBuildConfig.cachingStrategy,
+      tabs: [
+        PageTab<PostMasterModel>("All posts", (PostMasterModel post) => true),
+        PageTab<PostMasterModel>("My posts", (PostMasterModel post) => post.isAuthor),
+      ],
     );
   }
 

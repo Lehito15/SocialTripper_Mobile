@@ -47,9 +47,6 @@ class _PostCommentWidgetState extends State<PostCommentWidget> {
         CommentService().likeComment(commentUUID, accountUUID);
       }
     });
-
-    // Tutaj możesz dodać wywołanie funkcji do backendu, aby zaktualizować polubienie
-    // np. likeComment(widget.postComment.uuid);
   }
 
   @override

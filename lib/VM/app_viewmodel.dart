@@ -6,6 +6,8 @@ class AppViewModel extends ChangeNotifier {
   bool isActiveTripVisible = false;
   int currentNavIndex = 0;
 
+  void Function()? finishTripCallback;
+
   // Metoda do sprawdzenia aktywnego tripa
   Future<void> checkActiveTrip() async {
     AccountService service = AccountService();
@@ -20,6 +22,16 @@ class AppViewModel extends ChangeNotifier {
       checkActiveTrip();
     }
     notifyListeners();
+  }
+
+
+  void setFinishTripCallback(void Function() callback) {
+    print("setting setFinishTripCallback");
+    finishTripCallback = callback;
+  }
+
+  void clearFinishTripCallback() {
+    finishTripCallback = null;
   }
 
 }

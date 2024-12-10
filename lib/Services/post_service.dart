@@ -144,7 +144,7 @@ class PostService {
 
           for (var post in decodedResponse) {
             PostMasterModel masterModel = PostMasterModel.fromJson(post);
-            await _setLikeStatus(masterModel, currentUserUUID);
+            await _setAdditionalInfo(masterModel, currentUserUUID);
             posts.add(masterModel);
           }
         } else {
@@ -175,7 +175,7 @@ class PostService {
         if (decodedResponse is List) {
           for (var post in decodedResponse) {
             PostMasterModel masterModel = PostMasterModel.fromJson(post);
-            await _setLikeStatus(masterModel, currentUserUUID);
+            await _setAdditionalInfo(masterModel, currentUserUUID);
             posts.add(masterModel); // Dodajemy do listy
             yield posts; // Emitujemy całą listę, ale tylko raz na iterację
           }
@@ -192,9 +192,10 @@ class PostService {
     }
   }
 
-  Future<void> _setLikeStatus(PostMasterModel model, String? currentUserUUID) async {
+  Future<void> _setAdditionalInfo(PostMasterModel model, String? currentUserUUID) async {
     bool isLiked = await PostService().didUserReactToPost(currentUserUUID ?? "", model.uuid);
     model.isLiked = isLiked;
+    model.isAuthor = currentUserUUID == model.account.uuid;
   }
 
 

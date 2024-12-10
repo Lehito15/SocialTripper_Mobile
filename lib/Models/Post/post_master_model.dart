@@ -12,6 +12,7 @@ class PostMasterModel {
   final AccountThumbnail account;
   final Set<String> postMultimediaUrls;
   bool isLiked = false;
+  bool isAuthor = false;
 
   // Konstruktor klasy
   PostMasterModel({
