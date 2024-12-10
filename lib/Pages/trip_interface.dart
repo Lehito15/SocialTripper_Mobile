@@ -16,6 +16,8 @@ import 'package:provider/provider.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_status.dart';
+import 'package:social_tripper_mobile/Models/Trip/user_path_points.dart';
+import 'package:social_tripper_mobile/Services/relation_service.dart';
 import 'package:social_tripper_mobile/Services/trip_service.dart';
 import '../Components/TripInterface/camera.dart';
 import '../Components/TripInterface/marker.dart';
@@ -89,6 +91,7 @@ class _TripInterfaceState extends State<TripInterface> {
   bool _isProcessingMessage = false;
 
   bool _isEndingTrip = false;
+  bool _isStartingTrip = false;
 
 
   Timer? timer;
@@ -172,7 +175,6 @@ class _TripInterfaceState extends State<TripInterface> {
           print("Error downloading media: $e");
         }
       }
-
       await saveState(); // Zapisujemy stan
     }
   }
@@ -437,9 +439,6 @@ class _TripInterfaceState extends State<TripInterface> {
   }
 
   void stopAsLeader() async {
-    setState(() {
-      _isEndingTrip = true;
-    });
     final tripService = TripService();
     final stopMessage = jsonEncode({
       'trip_id': tripId,
@@ -448,6 +447,7 @@ class _TripInterfaceState extends State<TripInterface> {
     client.sendMessage(stopMessage);
 
     sendFiles();
+    sendCoordinates();
     await tripService.setTripStatus(widget.trip.uuid, TripStatus("finished"));
     stopClient();
   }
@@ -467,6 +467,8 @@ class _TripInterfaceState extends State<TripInterface> {
       leaderLong = "";
       lastReceivedId = "0";
       receivedIds = [];
+      _isEndingTrip = false;
+      _isStartingTrip = false;
     });
     appViewModel.clearFinishTripCallback();
     await saveState();
@@ -803,32 +805,37 @@ class _TripInterfaceState extends State<TripInterface> {
                 //debugLocationComponent(locationMessage),
                 if (isTripNotStarted)
 
-                // wyekstrachowac do komponentow
                   ElevatedButton(
                     onPressed: () {
-                      _isEndingTrip = false;
-                      _getCurrentLocation().then((value) {
-                        lat = '${value.latitude}';
-                        long = '${value.longitude}';
+                      if (!_isStartingTrip) {
+                        print("starting");
                         setState(() {
-                          locationMessage =
-                          'Latitude: $lat, Longitude: $long';
-                          isTripNotStarted = false;
+                          _isStartingTrip = true;
                         });
+                        _isEndingTrip = false;
+                        _getCurrentLocation().then((value) {
+                          lat = '${value.latitude}';
+                          long = '${value.longitude}';
+                          setState(() {
+                            locationMessage =
+                            'Latitude: $lat, Longitude: $long';
+                            isTripNotStarted = false;
+                          });
 
-                        mapController.move(LatLng(value.latitude,
-                            value.longitude), 20.0);
-                        saveState();
-                        start();
-                        if (isLeader) {
-                          startAsLeader();
-                          _liveLocation();
-                        }
-                        else {
-                          startAsParticipant();
-                          _liveLocation();
-                        }
-                      });
+                          mapController.move(LatLng(value.latitude,
+                              value.longitude), 20.0);
+                          saveState();
+                          start();
+                          if (isLeader) {
+                            startAsLeader();
+                            _liveLocation();
+                          }
+                          else {
+                            startAsParticipant();
+                            _liveLocation();
+                          }
+                        });
+                      }
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
@@ -845,19 +852,26 @@ class _TripInterfaceState extends State<TripInterface> {
                 if (!isTripNotStarted)
                   ElevatedButton(
                     onPressed: () {
-                      AppViewModel appViewModel =
-                      Provider.of<AppViewModel>(context, listen: false);
-                      //client.isConnected() &&
-                      print(_isEndingTrip);
-                      if (isLeader && !_isEndingTrip) {
-                        if (appViewModel.finishTripCallback != null) {
-                          appViewModel.finishTripCallback!();
+                      if (!_isEndingTrip) {
+                        print("ending");
+                        setState(() {
+                          _isEndingTrip = true;
+                        });
+                        AppViewModel appViewModel =
+                        Provider.of<AppViewModel>(context, listen: false);
+                        print("poz: $positionPack");
+                        print("print rt: $routeCoordinates");
+                        //client.isConnected() &&
+                        if (isLeader) {
+                          if (appViewModel.finishTripCallback != null) {
+                            appViewModel.finishTripCallback!();
+                          }
+                          stopLiveLocation();
+                          stopAsLeader();
+                        } else {
+                          stopLiveLocation();
+                          stopClient();
                         }
-                        stopLiveLocation();
-                        stopAsLeader();
-                      } else if (!isLeader && !_isEndingTrip) {
-                        stopLiveLocation();
-                        stopClient();
                       }
                     },
                     style: ElevatedButton.styleFrom(
@@ -949,9 +963,8 @@ class _TripInterfaceState extends State<TripInterface> {
     Future.wait(markers.map((m) async {
       final v = m.child as CustomMarker;
       final TripService tripService = TripService();
-      final userUUID = await AccountService().getSavedAccountUUID();
       String path = v.getMediaPath;
-      TripMultimedia metadata = TripMultimedia(v.getMediaPath, m.point.latitude, m.point.longitude, DateTime.now(), userUUID!, widget.trip.uuid);
+      TripMultimedia metadata = TripMultimedia(v.getMediaPath, m.point.latitude, m.point.longitude, DateTime.now(), widget.trip.owner.uuid, widget.trip.uuid);
       String metadataJson = jsonEncode(metadata);
       try {
         await tripService.uploadEventMultimedia(path, metadataJson);
@@ -960,6 +973,18 @@ class _TripInterfaceState extends State<TripInterface> {
       }
     }));
   }
+
+  Future<void> sendCoordinates() async {
+    final String userUUID = widget.trip.owner.uuid;
+    final String eventUUID = widget.trip.uuid;
+    final List<PointDTO> coordinates = [];
+    for (var coord in routeCoordinates) {
+      coordinates.add(PointDTO(latitude: coord.latitude, longitude: coord.longitude));
+    }
+    final UserPathPoints points = UserPathPoints(userUUID: userUUID, eventUUID: eventUUID, pathPoints: coordinates);
+    await RelationService().addUserPathPoints(points);
+  }
+
 }
 
 

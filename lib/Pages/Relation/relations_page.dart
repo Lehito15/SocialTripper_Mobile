@@ -132,7 +132,8 @@ class _RelationState extends State<Relation> with TickerProviderStateMixin {
                     _relation.media, // Przekazujemy multimedia do slidera
               ),
               TripLocationsMap(
-                  points: _relation.media,
+                  multimediaPoints: _relation.media,
+                  pathPoints: _relation.pathPoints,
                   mapCenter: _mapCenter,
                   mapController: _animatedMapController.mapController,
                   pageController: _pageController,
@@ -220,7 +221,8 @@ class _RelationSliderState extends State<RelationSlider> {
 }
 
 class TripLocationsMap extends StatefulWidget {
-  final List<TripMultimedia> points;
+  final List<TripMultimedia> multimediaPoints;
+  final List<LatLng> pathPoints;
   final LatLng mapCenter;
   final MapController mapController;
   final PageController pageController;
@@ -229,7 +231,8 @@ class TripLocationsMap extends StatefulWidget {
 
   const TripLocationsMap({
     super.key,
-    required this.points,
+    required this.multimediaPoints,
+    required this.pathPoints,
     required this.mapCenter,
     required this.mapController,
     required this.pageController,
@@ -268,25 +271,52 @@ class _TripLocationsMapState extends State<TripLocationsMap> {
             userAgentPackageName: 'com.example.app',
           ),
           MarkerLayer(
-            markers: widget.points.map((point) {
-              int index = widget.points.indexOf(point);
-              return Marker(
-                alignment: Alignment.topCenter,
-                width: 50,
-                height: 50,
-                point: LatLng(point.latitude, point.longitude),
-                child: GestureDetector(
-                  onTap: () {
-                    widget.pageController.jumpToPage(index);
-                  },
+            markers: [
+              // Tworzymy listę markerów, w której aktywny marker jest na końcu
+              ...widget.multimediaPoints.asMap().entries.map((entry) {
+                int index = entry.key;
+                var point = entry.value;
+                return Marker(
+                  alignment: Alignment.topCenter,
+                  width: 50,
+                  height: 50,
+                  point: LatLng(point.latitude, point.longitude),
+                  child: GestureDetector(
+                    onTap: () {
+                      widget.pageController.jumpToPage(index);
+                    },
+                    child: MyMarker(
+                      mediaPath: point.multimediaUrl,
+                      isActive: widget.activeIndex == index,
+                    ),
+                  ),
+                );
+              }).toList(),
+              // Dodajemy aktywny marker na końcu listy, aby był wyświetlany na wierzchu
+              if (widget.activeIndex >= 0 &&
+                  widget.activeIndex < widget.multimediaPoints.length)
+                Marker(
+                  alignment: Alignment.topCenter,
+                  width: 50,
+                  height: 50,
+                  point: LatLng(
+                      widget.multimediaPoints[widget.activeIndex].latitude,
+                      widget.multimediaPoints[widget.activeIndex].longitude),
                   child: MyMarker(
-                    mediaPath: point.multimediaUrl,
-                    isActive: widget.activeIndex == index,
+                    mediaPath: widget
+                        .multimediaPoints[widget.activeIndex].multimediaUrl,
+                    isActive: true,
                   ),
                 ),
-              );
-            }).toList(),
+            ],
           ),
+          PolylineLayer(polylines: [
+            Polyline(
+              points: widget.pathPoints,
+              strokeWidth: 4.0,
+              color: Colors.blue,
+            )
+          ])
         ],
       ),
     );

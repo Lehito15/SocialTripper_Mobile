@@ -65,8 +65,10 @@ class TripService {
         if (decodedResponse is List) {
           for (var trip in decodedResponse) {
             TripMaster masterModel = TripMaster.fromJson(trip);
-            await _setAdditionalInfo(masterModel, currentUserUUID);
-            trips.add(masterModel);  // Dodajemy trip do listy
+            if (masterModel.eventStatus.status != "cancelled") {
+              await _setAdditionalInfo(masterModel, currentUserUUID);
+              trips.add(masterModel);  // Dodajemy trip do listy
+            }
             yield List.from(trips);
           }
         } else {
