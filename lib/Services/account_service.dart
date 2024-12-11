@@ -1,6 +1,9 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:mime/mime.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:social_tripper_mobile/Models/Account/account.dart';
 import 'package:social_tripper_mobile/Models/Account/account_thumbnail.dart';
@@ -44,7 +47,8 @@ class AccountService {
     try {
       // Pobierz atrybuty użytkownika (np. email)
       final userAttributes = await Amplify.Auth.fetchUserAttributes();
-      final email = userAttributes[0].value; // Zakładamy, że email jest na pierwszej pozycji
+      final email = userAttributes[0]
+          .value; // Zakładamy, że email jest na pierwszej pozycji
       final url = "$baseUrl/email?email=$email";
       var client = http.Client();
       var response = await client.get(Uri.parse(url));
@@ -57,7 +61,6 @@ class AccountService {
         SharedPreferences prefs = await SharedPreferences.getInstance();
         await prefs.setString('account_uuid', account.uuid);
         return account;
-
       } else {
         throw Exception('Failed to load account: ${response.statusCode}');
       }
@@ -116,4 +119,43 @@ class AccountService {
   }
 
 
+  Future<void> createAccount(Account accountDTO, File? profilePicture) async {
+    final uri = Uri.parse('http://yourapiurl.com/accounts');
+
+    var request = http.MultipartRequest('POST', uri);
+
+    // Kodowanie obiektu Account do JSON i dodanie go do zapytania jako część formularza
+    request.fields['accountDTO'] = jsonEncode(accountDTO
+        .toJson()); // zakładając, że masz metodę toJson w klasie Account
+
+    // Dodanie pliku zdjęcia profilowego, jeśli jest dostępny
+    if (profilePicture != null) {
+      String? mimeType = lookupMimeType(profilePicture.path);
+      var imageStream = http.ByteStream(profilePicture.openRead());
+      var imageLength = await profilePicture.length();
+
+      var multipartFile = http.MultipartFile(
+        'profilePicture',
+        imageStream,
+        imageLength,
+        filename: profilePicture.uri.pathSegments.last,
+        contentType: MediaType.parse(mimeType ?? 'application/octet-stream'),
+      );
+
+      request.files.add(multipartFile);
+    }
+
+    // Wysłanie zapytania
+    try {
+      var response = await request.send();
+
+      if (response.statusCode == HttpStatus.created) {
+        print('Account created successfully');
+      } else {
+        print('Failed to create account: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error: $e');
+    }
+  }
 }

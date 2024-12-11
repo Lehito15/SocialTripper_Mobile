@@ -8,19 +8,12 @@ import 'package:social_tripper_mobile/Components/Shared/authorization_logo_heade
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Pages/Authorization/complete_account_information_page.dart';
-import 'package:social_tripper_mobile/Pages/config/data_retrieving_config.dart';
 import 'package:social_tripper_mobile/Pages/home_page.dart';
 import 'package:social_tripper_mobile/Pages/post_comments_page.dart';
 import 'package:social_tripper_mobile/Pages/Relation/relations_page.dart';
 import 'package:social_tripper_mobile/Pages/trip_interface.dart';
 import 'package:social_tripper_mobile/Pages/trips_page.dart';
-import 'package:social_tripper_mobile/Repositories/post_repository.dart';
-import 'package:social_tripper_mobile/Repositories/trip_repository.dart';
-import 'package:social_tripper_mobile/Services/account_service.dart';
-import 'package:social_tripper_mobile/Services/relation_service.dart';
-import 'package:social_tripper_mobile/Services/trip_service.dart';
 import 'package:social_tripper_mobile/Utilities/Converters/language_converter.dart';
-import 'package:social_tripper_mobile/Utilities/DataGenerators/user_generator.dart';
 import 'package:go_router/go_router.dart';
 
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';

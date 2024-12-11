@@ -18,8 +18,7 @@ class DataLoadingPage extends StatelessWidget {
       print("Account loaded successfully");
     } catch (e) {
       print("Error fetching account: $e");
-      await Amplify.Auth.signOut();
-      return;
+      // await Amplify.Auth.signOut();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         print("przechodze 1");
         GoRouter.of(context).go('/complete_register');

@@ -83,6 +83,28 @@ class Account {
     }
   }
 
+  // Dodanie metody toJson
+  Map<String, dynamic> toJson() {
+    return {
+      'uuid': uuid,
+      'nickname': nickname,
+      'email': email,
+      'isPublic': isPublic,
+      'salt': salt,
+      'phone': phone,
+      'role': role,
+      'isExpired': isExpired,
+      'isLocked': isLocked,
+      'createdAt': createdAt.toIso8601String(),
+      'homePageUrl': homePageUrl,
+      'description': description,
+      'followsNumber': followsNumber,
+      'followingNumber': followingNumber,
+      'numberOfTrips': numberOfTrips,
+      'profilePictureUrl': profilePictureUrl,
+      'user': user.toJson(),  // Zakładając, że UserThumbnail również ma metodę toJson
+    };
+  }
 
   @override
   String toString() {
