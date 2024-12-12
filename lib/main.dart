@@ -194,7 +194,9 @@ final GoRouter router = GoRouter(
             GoRoute(
                 path: '/complete_register',
                 builder: (context, state) {
-                  return CompleteAccountInformationPage();
+                  final state = GoRouter.of(context).state;
+                  final email = state?.extra as String? ?? 'Brak emaila';
+                  return CompleteAccountInformationPage(email: email);
                 })
           ])
         ])

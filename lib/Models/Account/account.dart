@@ -1,11 +1,10 @@
 import '../User/user.dart';
 
 class Account {
-  String uuid;
+  String? uuid;
   String nickname;
   String email;
   bool isPublic;
-  String salt;
   String phone;
   String role;
   bool isExpired;
@@ -17,7 +16,7 @@ class Account {
   int followingNumber;
   int numberOfTrips;
   String profilePictureUrl;
-  UserThumbnail user;
+  UserThumbnail? user;
 
 
   Account(
@@ -25,7 +24,6 @@ class Account {
       this.nickname,
       this.email,
       this.isPublic,
-      this.salt,
       this.phone,
       this.role,
       this.isExpired,
@@ -45,7 +43,6 @@ class Account {
       String nickname = json['nickname'];
       String email = json['email'];
       bool isPublic = json['isPublic'];
-      String salt = json['salt'];
       String phone = json['phone'];
       String role = json['role'];
       bool isExpired = json['isExpired'];
@@ -58,12 +55,16 @@ class Account {
       int numberOfTrips = json['numberOfTrips'];
       String profilePictureUrl = json['profilePictureUrl'];
       UserThumbnail user = UserThumbnail.fromJson(json['user']);
+      // if (json['user'] != null) {
+      //   user = UserThumbnail.fromJson(json['user']);
+      // } else {
+      //   user = UserThumbnail("1", "1", "1", "M", DateTime.now(), 1, 1, 1, Country("Poland"), {}, {});
+      // }
       return Account(
         uuid,
         nickname,
         email,
         isPublic,
-        salt,
         phone,
         role,
         isExpired,
@@ -75,7 +76,7 @@ class Account {
         followingNumber,
         numberOfTrips,
         profilePictureUrl,
-        user,
+        user!,
       );
     } catch (e) {
       print("Error while parsing Account: $e");
@@ -90,7 +91,6 @@ class Account {
       'nickname': nickname,
       'email': email,
       'isPublic': isPublic,
-      'salt': salt,
       'phone': phone,
       'role': role,
       'isExpired': isExpired,
@@ -102,12 +102,12 @@ class Account {
       'followingNumber': followingNumber,
       'numberOfTrips': numberOfTrips,
       'profilePictureUrl': profilePictureUrl,
-      'user': user.toJson(),  // Zakładając, że UserThumbnail również ma metodę toJson
+      'user': user?.toJson(),  // Zakładając, że UserThumbnail również ma metodę toJson
     };
   }
 
   @override
   String toString() {
-    return 'Account{uuid: $uuid, nickname: $nickname, email: $email, isPublic: $isPublic, salt: $salt, phone: $phone, role: $role, isExpired: $isExpired, isLocked: $isLocked, createdAt: $createdAt, homePageUrl: $homePageUrl, description: $description, followsNumber: $followsNumber, followingNumber: $followingNumber, numberOfTrips: $numberOfTrips, profilePictureUrl: $profilePictureUrl, user: $user}';
+    return 'Account{uuid: $uuid, nickname: $nickname, email: $email, isPublic: $isPublic, phone: $phone, role: $role, isExpired: $isExpired, isLocked: $isLocked, createdAt: $createdAt, homePageUrl: $homePageUrl, description: $description, followsNumber: $followsNumber, followingNumber: $followingNumber, numberOfTrips: $numberOfTrips, profilePictureUrl: $profilePictureUrl, user: $user}';
   }
 }

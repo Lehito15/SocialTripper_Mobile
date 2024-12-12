@@ -10,6 +10,7 @@ import '../../Services/account_service.dart';
 
 class DataLoadingPage extends StatelessWidget {
   Future<void> _checkAccountStatus(BuildContext context) async {
+    // await Amplify.Auth.signOut();
     AccountService service = AccountService();
     SharedPreferences prefs = await SharedPreferences.getInstance();
 
@@ -18,10 +19,14 @@ class DataLoadingPage extends StatelessWidget {
       print("Account loaded successfully");
     } catch (e) {
       print("Error fetching account: $e");
+      final userAttributes = await Amplify.Auth.fetchUserAttributes();
+      final email = userAttributes[0].value;
       // await Amplify.Auth.signOut();
       WidgetsBinding.instance.addPostFrameCallback((_) {
         print("przechodze 1");
-        GoRouter.of(context).go('/complete_register');
+        if (context.mounted) {
+          GoRouter.of(context).go('/complete_register', extra: email);
+        }
       });
       return; // Zatrzymujemy dalsze wykonanie
     }

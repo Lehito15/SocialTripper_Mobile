@@ -1,17 +1,24 @@
+import 'dart:convert';
 import 'dart:ffi';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:social_tripper_mobile/Components/BottomNavigation/bottom_navigation.dart';
 import 'package:social_tripper_mobile/Components/Shared/authorization_logo_header.dart';
 import 'package:social_tripper_mobile/Components/Shared/language_master.dart';
+import 'package:social_tripper_mobile/Models/Account/account.dart';
 import 'package:social_tripper_mobile/Models/Activity/activity_skill.dart';
 import 'package:social_tripper_mobile/Models/Language/language_skill.dart';
 import 'package:social_tripper_mobile/Models/User/user.dart';
+import 'package:social_tripper_mobile/Models/User/user_dto.dart';
 import 'package:social_tripper_mobile/Pages/TripDetail/Subpages/trip_detail_details.dart';
+import 'package:social_tripper_mobile/Services/account_service.dart';
+import 'package:social_tripper_mobile/Services/user_service.dart';
 import 'package:social_tripper_mobile/Utilities/Converters/language_converter.dart';
 import 'package:social_tripper_mobile/Utilities/Retrievers/activity_retriever.dart';
 import 'package:social_tripper_mobile/Utilities/Retrievers/flag_retriever.dart';
@@ -19,7 +26,9 @@ import 'package:social_tripper_mobile/Utilities/Retrievers/flag_retriever.dart';
 import '../../Utilities/DataGenerators/Trip/skills_data_source.dart';
 
 class CompleteAccountInformationPage extends StatefulWidget {
-  const CompleteAccountInformationPage({super.key});
+  final String email;
+
+  const CompleteAccountInformationPage({super.key, required this.email});
 
   @override
   State<CompleteAccountInformationPage> createState() =>
@@ -28,7 +37,7 @@ class CompleteAccountInformationPage extends StatefulWidget {
 
 class _CompleteAccountInformationPageState
     extends State<CompleteAccountInformationPage> {
-  int page = 3;
+  int page = 1;
   late List<DropdownMenuItem<String>> phoneCodesItems;
   late List<DropdownMenuItem<String>> countriesItems;
   String? _name;
@@ -44,9 +53,10 @@ class _CompleteAccountInformationPageState
   double? _height;
   double? _physicality;
   String? _description;
-  Set<ActivitySkill> activities = {};
-  Set<LanguageSkill> languages = {};
+  Set<Activity> activities = {};
+  Set<Language> languages = {};
   String? _selectedActivity;
+  late final String _email;
   late TextEditingController _nameController;
   late TextEditingController _nicknameController;
   late TextEditingController _surnameController;
@@ -85,6 +95,7 @@ class _CompleteAccountInformationPageState
     _physicality = 5.0;
     _availableActivities = getAllActivities();
     _availableLanguages = getAllLanguages();
+    _email = widget.email;
 
     super.initState();
   }
@@ -104,7 +115,6 @@ class _CompleteAccountInformationPageState
     if (pickedDate != null && pickedDate != _birthDate) {
       setState(() {
         _birthDate = pickedDate;
-        // Formatowanie daty i przypisanie jej do kontrolera
         _dateOfBirthController.text = '${_birthDate!.toLocal()}'.split(' ')[0];
       });
     }
@@ -252,13 +262,9 @@ class _CompleteAccountInformationPageState
                         // Jeśli aktywność nie istnieje, dodajemy ją do zbioru
                         setState(() {
                           _selectedActivity = newValue;
-                          final newOne = ActivitySkill(newValue, 5.0);
+                          final newOne = Activity(5.0, newValue);
                           activities.add(newOne);
                         });
-
-                        // Debug: Wyświetlenie aktualnej zawartości zbioru
-                        print(
-                            "Activities set: ${activities.map((e) => e.name).toList()}");
                       } else {
                         // Jeśli aktywność już istnieje, nic nie robimy
                         print("This activity is already added.");
@@ -307,14 +313,15 @@ class _CompleteAccountInformationPageState
                       if (!languageExists) {
                         // Jeśli język nie istnieje, dodajemy go do zbioru
                         setState(() {
-                          final newLanguage = LanguageSkill(newValue,
-                              5.0); // Tworzymy nowy obiekt LanguageSkill
+                          final newLanguage = Language(5.0,
+                              newValue); // Tworzymy nowy obiekt LanguageSkill
                           languages.add(newLanguage);
                         });
 
                         // Debug: Wyświetlenie aktualnej zawartości zbioru
                         print(
-                            "Languages set: ${languages.map((e) => e.name).toList()}");
+                            "Languages set: ${languages.map((e) => e.name)
+                                .toList()}");
                       } else {
                         // Jeśli język już istnieje, nic nie robimy
                         print("This language is already added.");
@@ -361,7 +368,7 @@ class _CompleteAccountInformationPageState
                               width: 30,
                               height: 30,
                               child:
-                                  FlagRetriever().retrieve(language.name, 30),
+                              FlagRetriever().retrieve(language.name, 30),
                             ),
                             SizedBox(width: 9),
                             Expanded(
@@ -373,7 +380,8 @@ class _CompleteAccountInformationPageState
                                       Text("${language.name}"),
                                       Expanded(child: Text("")),
                                       Text(
-                                          "Score: ${language.level.toStringAsFixed(1)}"),
+                                          "Score: ${language.level
+                                              .toStringAsFixed(1)}"),
                                       // Zaokrąglamy wynik do 1 miejsca po przecinku
                                     ],
                                   ),
@@ -384,10 +392,10 @@ class _CompleteAccountInformationPageState
                                       inactiveTrackColor: Colors.grey[300],
                                       thumbColor: Colors.black,
                                       overlayColor:
-                                          Colors.blue.withOpacity(0.2),
+                                      Colors.blue.withOpacity(0.2),
                                       valueIndicatorColor: Colors.blue,
                                       valueIndicatorTextStyle:
-                                          TextStyle(color: Colors.white),
+                                      TextStyle(color: Colors.white),
                                       overlayShape: RoundSliderOverlayShape(
                                           overlayRadius: 0),
                                     ),
@@ -399,9 +407,8 @@ class _CompleteAccountInformationPageState
                                       divisions: 100,
                                       onChanged: (value) {
                                         setState(() {
-                                          print(languages);
-                                          language.level =
-                                              value; // Ustawienie nowej wartości
+                                          language.level = double.parse(
+                                              value.toStringAsFixed(1));
                                         });
                                       },
                                     ),
@@ -433,8 +440,93 @@ class _CompleteAccountInformationPageState
               Expanded(child: Text("")),
               Padding(
                 padding: const EdgeInsets.all(18),
-                child: NavigationButton("Register", true, () {
-                  print("$activities, $languages");
+                child: NavigationButton("Register", true, () async {
+                  double? _heightTemp = _height;
+                  _weight = _weight != null
+                      ? double.parse((_weight!).toStringAsFixed(1))
+                      : null; // Formatowanie wagi
+                  _height = _heightTemp != null
+                      ? double.parse((_heightTemp! / 100).toStringAsFixed(2))
+                      : null; // Formatowanie wzrostu
+                  UserDTO userDTO = UserDTO(
+                    "",
+                    _name!,
+                    _surname!,
+                    _selectedGender!,
+                    _birthDate!,
+                    _weight!,
+                    _height!,
+                    0,
+                    _physicality!,
+                    Account(
+                      "",
+                      _nickname!,
+                      _email,
+                      true,
+                      _phoneNumber!,
+                      "",
+                      false,
+                      false,
+                      DateTime.now(),
+                      "",
+                      _description!,
+                      0,
+                      0,
+                      0,
+                      _profilePicture!,
+                      null,
+                    ),
+                    Country(_country!),
+                    languages,
+                    activities,
+                  );
+                  try {
+                    await UserService().createUser(userDTO, _profilePicture);
+                    await AccountService().getCurrentAccount();
+                    context.go("/home");
+                  } catch (e) {
+                    print("error creating user: $e");
+                  }
+                  // Generowanie UUID
+                  // final String uuid = "131232321";
+                  //
+                  // // Przygotowanie minimalnych danych
+                  // final String formattedDate = DateTime.now().toIso8601String();
+                  // UserDTO userDTO = UserDTO(
+                  //   null, // uuid
+                  //   'TestName', // name
+                  //   'TestSurname', // surname
+                  //   'M', // gender
+                  //   DateTime.now(), // dateOfBirth
+                  //   70.0, // weight
+                  //   1.7, // height
+                  //   null, // bmi
+                  //   5.0, // physicality
+                  //   Account(
+                  //     null, // account uuid
+                  //     'TestNickname', // nickname
+                  //     'test@example.com', // email
+                  //     true, // isPublic
+                  //     '123456789', // phone
+                  //     '', // role
+                  //     false, // isExpired
+                  //     false, // isLocked
+                  //     DateTime.now(), // createdAt
+                  //     '', // homePageUrl
+                  //     'Test Description', // description
+                  //     0, // followersNumber
+                  //     0, // followingNumber
+                  //     0, // numberOfTrips
+                  //     '', // profilePictureUrl
+                  //     null, // user
+                  //   ),
+                  //   Country('Poland'), // country
+                  //   {}, // languages
+                  //   {}, // activities
+                  // );
+                  //
+                  // print("Sending data to server: ${jsonEncode(userDTO.toJson())}");
+                  // await UserService().createUser(userDTO, _profilePicture);  // No profile picture
                 }),
               ),
             ],
@@ -451,8 +543,8 @@ class _CompleteAccountInformationPageState
       // Zapewnia, że lista nie będzie przewijana osobno
       itemCount: activities.length,
       itemBuilder: (BuildContext context, int index) {
-        final List<ActivitySkill> activityList = activities.toList();
-        final ActivitySkill activity = activityList[index];
+        final List<Activity> activityList = activities.toList();
+        final Activity activity = activityList[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 9.0),
           child: Row(
@@ -473,7 +565,8 @@ class _CompleteAccountInformationPageState
                       children: [
                         Text("${activity.name}"),
                         Expanded(child: Text("")),
-                        Text("Score: ${activity.level.toStringAsFixed(1)}"),
+                        Text(
+                            "Score: ${activity.experience.toStringAsFixed(1)}"),
                       ],
                     ),
                     SliderTheme(
@@ -491,14 +584,15 @@ class _CompleteAccountInformationPageState
                         overlayShape: RoundSliderOverlayShape(overlayRadius: 0),
                       ),
                       child: Slider(
-                        value: activity.level ?? 0,
+                        value: activity.experience ?? 0,
                         min: 0,
                         max: 10,
                         divisions: 100,
                         onChanged: (value) {
                           print(activities);
                           setState(() {
-                            activity.level = value;
+                            activity.experience =
+                                double.parse(value.toStringAsFixed(1));
                           });
                         },
                       ),
@@ -549,7 +643,7 @@ class _CompleteAccountInformationPageState
                     "photo.example",
                     Icon(Icons.photo),
                     _profilePictureController,
-                    (val) {
+                        (val) {
                       setState(() {
                         _profilePicture = val;
                       });
@@ -571,12 +665,14 @@ class _CompleteAccountInformationPageState
                       Expanded(
                         child: FormTextInput(
                             "Weight (kg)", "xx.x", null, _weightController,
-                            (value) {
-                          setState(() {
-                            _weight = double.tryParse(value);
-                          });
-                        }, validator: (value) {
-                          if (_weight == null || _weight.toString().isEmpty) {
+                                (value) {
+                              setState(() {
+                                _weight = double.tryParse(value);
+                              });
+                            }, validator: (value) {
+                          if (_weight == null || _weight
+                              .toString()
+                              .isEmpty) {
                             return "Please fill weight";
                           }
                           return null;
@@ -594,13 +690,15 @@ class _CompleteAccountInformationPageState
                           "xxx",
                           null,
                           _heightController,
-                          (value) {
+                              (value) {
                             setState(() {
                               _height = double.tryParse(value);
                             });
                           },
                           validator: (value) {
-                            if (_height == null || _height.toString().isEmpty) {
+                            if (_height == null || _height
+                                .toString()
+                                .isEmpty) {
                               return "Please fill height";
                             }
                             return null;
@@ -619,15 +717,15 @@ class _CompleteAccountInformationPageState
                   SizedBox(height: 18),
                   FormTextInput("Description", "Description", null,
                       _descriptionController, (val) {
-                    setState(() {
-                      _description = val;
-                    });
-                  }, validator: (val) {
-                    if (_description == null || _description!.isEmpty) {
-                      return "Please fill description";
-                    }
-                    return null;
-                  }),
+                        setState(() {
+                          _description = val;
+                        });
+                      }, validator: (val) {
+                        if (_description == null || _description!.isEmpty) {
+                          return "Please fill description";
+                        }
+                        return null;
+                      }),
                   SizedBox(height: 18),
                 ],
               ),
@@ -659,7 +757,7 @@ class _CompleteAccountInformationPageState
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                             content:
-                                Text("Please fill in all required fields")),
+                            Text("Please fill in all required fields")),
                       );
                     }
                   }),
@@ -737,30 +835,30 @@ class _CompleteAccountInformationPageState
       children: [
         _profilePicture != null
             ? Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black, width: 2),
-                  image: DecorationImage(
-                    image: FileImage(_profilePictureFile!), // Wybrane zdjęcie
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              )
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.black, width: 2),
+            image: DecorationImage(
+              image: FileImage(_profilePictureFile!), // Wybrane zdjęcie
+              fit: BoxFit.cover,
+            ),
+          ),
+        )
             : Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(color: Colors.black, width: 2),
-                ),
-                child: Icon(
-                  Icons.photo_camera,
-                  size: 60, // Wymiar ikony, dostosuj do potrzeb
-                  color: Colors.black.withOpacity(0.65), // Kolor ikony
-                ),
-              ),
+          width: 120,
+          height: 120,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: Colors.black, width: 2),
+          ),
+          child: Icon(
+            Icons.photo_camera,
+            size: 60, // Wymiar ikony, dostosuj do potrzeb
+            color: Colors.black.withOpacity(0.65), // Kolor ikony
+          ),
+        ),
       ],
     );
   }
@@ -788,28 +886,28 @@ class _CompleteAccountInformationPageState
                     children: [
                       Expanded(
                         child:
-                            FormTextInput("Name", "Name", null, _nameController,
-                                validator: (val) {
-                          if (_name == null || _name!.isEmpty) {
-                            return "Please fill name";
-                          }
-                          return null;
-                        }, (value) {
-                          setState(() {
-                            _name = value;
-                          });
-                        }),
+                        FormTextInput("Name", "Name", null, _nameController,
+                            validator: (val) {
+                              if (_name == null || _name!.isEmpty) {
+                                return "Please fill name";
+                              }
+                              return null;
+                            }, (value) {
+                              setState(() {
+                                _name = value;
+                              });
+                            }),
                       ),
                       SizedBox(width: 18),
                       Expanded(
                         child: FormTextInput(
                             "Surname", "Surname", null, _surnameController,
                             validator: (val) {
-                          if (_surname == null || _surname!.isEmpty) {
-                            return "Please fill surname";
-                          }
-                          return null;
-                        }, (value) {
+                              if (_surname == null || _surname!.isEmpty) {
+                                return "Please fill surname";
+                              }
+                              return null;
+                            }, (value) {
                           setState(() {
                             _surname = value;
                           });
@@ -825,7 +923,7 @@ class _CompleteAccountInformationPageState
                     "Date of birth",
                     null,
                     _dateOfBirthController,
-                    (val) {},
+                        (val) {},
                     suffixIcon: Icon(Icons.calendar_today),
                     onTap: () => _selectDate(context),
                     readOnly: true,
@@ -842,7 +940,7 @@ class _CompleteAccountInformationPageState
                     "Your phone number",
                     null,
                     _phoneNumberController,
-                    (val) {
+                        (val) {
                       setState(() {
                         _phoneNumber = val;
                       });
@@ -867,6 +965,7 @@ class _CompleteAccountInformationPageState
                   InputTitle("Country"),
                   SizedBox(height: 9),
                   ShadowedContainer(CountriesDropdown(countriesItems, (value) {
+                    print(value);
                     setState(() {
                       _country = value;
                     });
@@ -902,8 +1001,8 @@ class _CompleteAccountInformationPageState
     );
   }
 
-  Widget NavigationButton(
-      String text, bool isForward, void Function() onClick) {
+  Widget NavigationButton(String text, bool isForward,
+      void Function() onClick) {
     return GestureDetector(
       onTap: onClick,
       child: Container(
@@ -940,12 +1039,11 @@ class _CompleteAccountInformationPageState
 
   Widget CountriesDropdown(List<DropdownMenuItem<String>> countriesItems,
       void Function(String?) onChanged) {
-    _country = countriesItems[0].value;
     return ButtonTheme(
       alignedDropdown: true,
       child: DropdownButtonHideUnderline(
         child: DropdownButton(
-          value: _country ?? countriesItems[0].value,
+          value: _country,
           items: countriesItems,
           onChanged: onChanged,
           underline: null,
@@ -971,8 +1069,8 @@ class _CompleteAccountInformationPageState
     );
   }
 
-  Widget FormCheckInputRow(
-      String name1, String value1, String name2, String value2) {
+  Widget FormCheckInputRow(String name1, String value1, String name2,
+      String value2) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1055,11 +1153,11 @@ class _CompleteAccountInformationPageState
   Widget FormTextInput(String title, String hint, Widget? leading,
       TextEditingController controller, void Function(String) onChanged,
       {TextInputType inputType = TextInputType.text,
-      Widget? suffixIcon,
-      void Function()? onTap,
-      bool readOnly = false,
-      required String? Function(String?) validator,
-      List<TextInputFormatter> formatters = const []}) {
+        Widget? suffixIcon,
+        void Function()? onTap,
+        bool readOnly = false,
+        required String? Function(String?) validator,
+        List<TextInputFormatter> formatters = const []}) {
     print("walidator: $validator");
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1111,8 +1209,8 @@ class _CompleteAccountInformationPageState
     );
   }
 
-  InputDecoration MyInputDecoration(
-      String hint, Widget? leading, Widget? suffixIcon) {
+  InputDecoration MyInputDecoration(String hint, Widget? leading,
+      Widget? suffixIcon) {
     return InputDecoration(
         fillColor: Colors.white,
         hintText: hint,
@@ -1174,9 +1272,9 @@ class _CompleteAccountInformationPageState
               color: Colors.black.withOpacity(0.5), width: isActive ? 0 : 2),
           boxShadow: isActive
               ? [
-                  BoxShadow(
-                      color: Color(0xFFBDF271), blurRadius: 2, spreadRadius: 2)
-                ]
+            BoxShadow(
+                color: Color(0xFFBDF271), blurRadius: 2, spreadRadius: 2)
+          ]
               : []),
       child: Container(
         height: isActive ? 22 : 20,
@@ -1190,7 +1288,7 @@ class _CompleteAccountInformationPageState
           "$number",
           style: TextStyle(
               color:
-                  isActive ? Color(0xffBDF271) : Colors.black.withOpacity(0.5),
+              isActive ? Color(0xffBDF271) : Colors.black.withOpacity(0.5),
               fontSize: 14,
               fontWeight: FontWeight.w600),
         ),

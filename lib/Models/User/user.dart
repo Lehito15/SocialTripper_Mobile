@@ -16,7 +16,7 @@ class Country {
 }
 
 class Language {
-  final double level;
+  double level;
   final String name;
 
   Language(this.level, this.name);
@@ -43,7 +43,7 @@ class Language {
 }
 
 class Activity {
-  final double experience;
+  double experience;
   final String name;
 
   Activity(this.experience, this.name);
@@ -97,6 +97,7 @@ class UserThumbnail {
       );
 
   factory UserThumbnail.fromJson(Map<String, dynamic> json) {
+    print("from dzejson");
     return UserThumbnail(
       json['uuid'],
       json['name'],

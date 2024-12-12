@@ -1,6 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:amplify_flutter/amplify_flutter.dart';
+import 'package:dio/dio.dart';
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 import 'package:mime/mime.dart';
@@ -54,12 +56,10 @@ class AccountService {
       var response = await client.get(Uri.parse(url));
 
       if (response.statusCode == 200) {
-        // Przetwórz odpowiedź JSON
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
         Account account = Account.fromJson(decodedResponse);
-
         SharedPreferences prefs = await SharedPreferences.getInstance();
-        await prefs.setString('account_uuid', account.uuid);
+        await prefs.setString('account_uuid', account!.uuid!);
         return account;
       } else {
         throw Exception('Failed to load account: ${response.statusCode}');
@@ -92,6 +92,7 @@ class AccountService {
       if (response.statusCode == 200) {
         // Parsowanie odpowiedzi na obiekt AccountThumbnail
         final jsonResponse = jsonDecode(response.body);
+        print("koment tutaj");
         return AccountThumbnail.fromJson(jsonResponse);
       } else {
         throw Exception('Failed to fetch account: ${response.body}');
@@ -119,43 +120,62 @@ class AccountService {
   }
 
 
-  Future<void> createAccount(Account accountDTO, File? profilePicture) async {
-    final uri = Uri.parse('http://yourapiurl.com/accounts');
+  Future<void> createAccount(Account account, String? profilePicture) async {
+    final String url = '$baseUrl'; // URL do endpointa
 
-    var request = http.MultipartRequest('POST', uri);
+    Dio dio = Dio();
 
-    // Kodowanie obiektu Account do JSON i dodanie go do zapytania jako część formularza
-    request.fields['accountDTO'] = jsonEncode(accountDTO
-        .toJson()); // zakładając, że masz metodę toJson w klasie Account
+    // Serializowanie obiektu Account do JSON
+    String accountMetadata = jsonEncode(account.toJson()); // Zakładając, że masz metodę toJson w klasie Account
 
-    // Dodanie pliku zdjęcia profilowego, jeśli jest dostępny
-    if (profilePicture != null) {
-      String? mimeType = lookupMimeType(profilePicture.path);
-      var imageStream = http.ByteStream(profilePicture.openRead());
-      var imageLength = await profilePicture.length();
+    print(account);
+    print(profilePicture);
 
-      var multipartFile = http.MultipartFile(
-        'profilePicture',
-        imageStream,
-        imageLength,
-        filename: profilePicture.uri.pathSegments.last,
-        contentType: MediaType.parse(mimeType ?? 'application/octet-stream'),
-      );
+    // Tworzenie danych do wysłania w formacie multipart
+    FormData formData = FormData.fromMap({
+      'accountDTO': MultipartFile.fromBytes(
+          Uint8List.fromList(accountMetadata.codeUnits),
+          contentType: MediaType('application', 'json')
+      ),
+      'profilePicture': profilePicture != null
+          ? await MultipartFile.fromFile(profilePicture, contentType: MediaType('image', 'jpeg'))
+          : null
+    });
 
-      request.files.add(multipartFile);
-    }
+    print("Sending account data to server...");
 
-    // Wysłanie zapytania
     try {
-      var response = await request.send();
+      // Wysyłanie żądania POST
+      Response response = await dio.post(url, data: formData);
 
-      if (response.statusCode == HttpStatus.created) {
-        print('Account created successfully');
+      print('Response status: ${response.statusCode}');
+      print('Response data: ${response.data}');
+    } catch (e) {
+      print('Error creating user: $e');
+    }
+  }
+
+  Future<void> updateAccount(String uuid, Account account) async {
+    final url = Uri.parse('$baseUrl/$uuid'); // Zmień na rzeczywisty URL API
+
+    try {
+      final response = await http.patch(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: jsonEncode(account.toJson()),
+      );
+      print("zobaczmy: ${jsonEncode(account.toJson())}");
+      if (response.statusCode == 200) {
+        print('Account updated successfully: ${response.body}');
       } else {
-        print('Failed to create account: ${response.statusCode}');
+        print('Failed to update account. Status code: ${response.statusCode}, Body: ${response.body}');
+        throw Exception('Failed to update account.');
       }
     } catch (e) {
-      print('Error: $e');
+      print('Error while updating account: $e');
+      throw e;
     }
   }
 }

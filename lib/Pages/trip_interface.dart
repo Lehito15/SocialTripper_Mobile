@@ -43,15 +43,16 @@ class TripInterface extends StatefulWidget {
   @override
   State<TripInterface> createState() => _TripInterfaceState();
 }
-
+// 156.17.237.165
+// 156.17.237.132
 class _TripInterfaceState extends State<TripInterface> {
   // @override
   // bool get wantKeepAlive => true;
   late bool isLeader;
   late String tripId;
 
-  final String serverAddress = 'ws://156.17.237.132:50000';
-  final WebSocketClient client = WebSocketClient('ws://156.17.237.132:50000');
+  final String serverAddress = 'ws://156.17.237.165:50000';
+  final WebSocketClient client = WebSocketClient('ws://156.17.237.165:50000');
   String lastReceivedId = '0';
   List<String> receivedIds = [];
 
@@ -158,7 +159,7 @@ class _TripInterfaceState extends State<TripInterface> {
         lastReceivedId = receivedId;
 
         try {
-          final uri = Uri.parse("http://156.17.237.132:55000$filePath");
+          final uri = Uri.parse("http://156.17.237.165:55000$filePath");
           final response = await http.get(uri);
 
           if (response.statusCode == 200) {
@@ -413,7 +414,7 @@ class _TripInterfaceState extends State<TripInterface> {
           lastReceivedId = receivedId;
 
           try {
-            final uri = Uri.parse("http://156.17.237.132:55000$filePath");
+            final uri = Uri.parse("http://156.17.237.165:55000$filePath");
             final response = await http.get(uri);
 
             if (response.statusCode == 200) {
@@ -587,7 +588,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
   Future<void> uploadMedia(String filePath, String latitude, String longitude) async {
     try {
-      final uri = Uri.parse('http://156.17.237.132:55000/upload_media/');
+      final uri = Uri.parse('http://156.17.237.165:55000/upload_media/');
       final request = http.MultipartRequest('POST', uri);
 
       // Dodaj plik do żądania
@@ -796,10 +797,10 @@ class _TripInterfaceState extends State<TripInterface> {
         backgroundColor: Color(0xffF0F2F5),
         body: Column(
           children: <Widget>[
-            Text("$_isEndingTrip"),
-            Text(tripId),
-            Text("$isLeader"),
-            Text("${widget.trip.name}"),
+            // Text("$_isEndingTrip"),
+            // Text(tripId),
+            // Text("$isLeader"),
+            // Text("${widget.trip.name}"),
             Column(
               children: [
                 //debugLocationComponent(locationMessage),
