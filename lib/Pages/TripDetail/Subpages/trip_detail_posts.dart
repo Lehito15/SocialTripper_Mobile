@@ -21,6 +21,7 @@ Widget Posts(TripMaster trip, Future<List<PostMasterModel>> postsFuture) {
       } else {
         // Jeśli dane są dostępne, zwracamy ListView.builder
         return ListView.builder(
+          shrinkWrap: true,
           itemCount: snapshot.data!.length,  // Liczba elementów w liście
           itemBuilder: (context, index) {
             // Dla każdego elementu tworzymy widget PostMaster

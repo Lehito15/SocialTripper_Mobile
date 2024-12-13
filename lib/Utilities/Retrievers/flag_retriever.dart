@@ -23,7 +23,6 @@ class FlagRetriever implements SvgRetriever {
   }
 
   SvgPicture retrieveByCountryName(String countryName, double width) {
-    print(countryName);
     String code = LanguageConverter.convertCountryToFlagCode(countryName)!;
     return SvgPicture.asset(
       "$pathCore$code.svg",

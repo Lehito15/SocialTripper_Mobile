@@ -76,18 +76,18 @@ class _CustomBottomNavBarState extends State<CustomBottomNavBar> {
                   context.go("/relations");  // Przejdź do strony Relations
                 },
               ),
-              BottomNavItem(
-                "Groups",
-                "assets/icons/group.svg",
-                "svg",
-                appViewModel.currentNavIndex == 3,
-                    () {
-                  setState(() {
-                    appViewModel.changeIndex(3);  // Aktualizuj stan
-                  });
-                  context.go("/groups");  // Przejdź do strony Groups
-                },
-              ),
+              // BottomNavItem(
+              //   "Groups",
+              //   "assets/icons/group.svg",
+              //   "svg",
+              //   appViewModel.currentNavIndex == 3,
+              //       () {
+              //     setState(() {
+              //       appViewModel.changeIndex(3);  // Aktualizuj stan
+              //     });
+              //     context.go("/groups");  // Przejdź do strony Groups
+              //   },
+              // ),
               BottomNavItem(
                 "Explore",
                 "assets/icons/explore.svg",

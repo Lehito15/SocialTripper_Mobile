@@ -75,7 +75,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
   double speedLimit = 0.8;
   int distanceLimit = 25;
-  int maxDistanceLimit = 1;
+  int maxDistanceLimit = 50;
   int timeLimit = 10;
 
   bool hasAccelerometer = true;
@@ -95,7 +95,8 @@ class _TripInterfaceState extends State<TripInterface> {
   bool _isStartingTrip = false;
 
 
-  Timer? timer;
+  Timer? timer_leader;
+  Timer? timer_sync;
 
   @override
   void initState() {
@@ -129,12 +130,9 @@ class _TripInterfaceState extends State<TripInterface> {
   }
 
 
-
   void setupMessageHandler() {
     _messageQueue.stream.listen((message) async {
-      if (_isProcessingMessage) return; // Sprawdzamy, czy już coś przetwarzamy
-      _isProcessingMessage = true;
-
+      print("queue: $message");
       try {
         await _processMessage(message); // Procesujemy wiadomość
       } catch (e) {
@@ -148,35 +146,34 @@ class _TripInterfaceState extends State<TripInterface> {
   Future<void> _processMessage(Map<String, dynamic> data) async {
     print("Processing message: $data");
 
-    if (data['type'] == 'new_media') {
-      final receivedId = data['id'];
-      final filePath = data['filePath'];
-      final markerLat = data['lat'];
-      final markerLong = data['long'];
+    final receivedId = data['id'];
+    final filePath = data['filePath'];
+    final markerLat = data['lat'];
+    final markerLong = data['long'];
 
-      if (!receivedIds.contains(receivedId)) {
-        receivedIds.add(receivedId);
-        lastReceivedId = receivedId;
+    if (!receivedIds.contains(receivedId)) {
 
-        try {
-          final uri = Uri.parse("http://156.17.237.165:55000$filePath");
-          final response = await http.get(uri);
 
-          if (response.statusCode == 200) {
-            final directory = await getTemporaryDirectory();
-            final fileName = uri.pathSegments.last;
-            final localPath = "${directory.path}/$fileName";
-            final file = File(localPath);
-            await file.writeAsBytes(response.bodyBytes);
-            _addMarker(localPath, LatLng(double.parse(markerLat), double.parse(markerLong)));
-          } else {
-            print("Failed to download media: ${response.statusCode}");
-          }
-        } catch (e) {
-          print("Error downloading media: $e");
+      try {
+        final uri = Uri.parse("http://156.17.237.165:55000$filePath");
+        final response = await http.get(uri);
+
+        if (response.statusCode == 200) {
+          final directory = await getApplicationDocumentsDirectory();
+          final fileName = uri.pathSegments.last;
+          final localPath = "${directory.path}/$fileName";
+          final file = File(localPath);
+          await file.writeAsBytes(response.bodyBytes);
+          _addMarker(localPath, LatLng(double.parse(markerLat), double.parse(markerLong)));
+          receivedIds.add(receivedId);
+          lastReceivedId = receivedId;
+          await saveState();
+        } else {
+          print("Failed to download media: ${response.statusCode}");
         }
+      } catch (e) {
+        print("Error downloading media: $e");
       }
-      await saveState(); // Zapisujemy stan
     }
   }
 
@@ -274,7 +271,7 @@ class _TripInterfaceState extends State<TripInterface> {
       print('Connected to WebSocket server as Leader.');
 
       // Wysyłanie pozycji lidera co 5 sekund
-      timer = Timer.periodic(Duration(seconds: 5), (timer) {
+      timer_leader = Timer.periodic(Duration(seconds: 5), (timer) {
         final leaderPositionUpdate = jsonEncode({
           'trip_id': tripId,
           'type': 'leader_position',
@@ -284,12 +281,14 @@ class _TripInterfaceState extends State<TripInterface> {
         client.sendMessage(leaderPositionUpdate);
       });
 
-      final syncMessage = jsonEncode({
-        'trip_id': tripId,
-        "type": "sync_media",
-        "last_id": lastReceivedId,
+      timer_sync = Timer.periodic(Duration(seconds: 60), (timer) {
+        final syncMessage = jsonEncode({
+          'trip_id': tripId,
+          "type": "sync_media",
+          "last_id": lastReceivedId,
+        });
+        client.sendMessage(syncMessage);
       });
-      client.sendMessage(syncMessage);
     });
 
     monitorConnectivity(client);
@@ -311,11 +310,12 @@ class _TripInterfaceState extends State<TripInterface> {
     // });
 
     client.onMessage((message) async {
-      print("Received message: $message");
+      print("Received message(leader): $message");
       final data = jsonDecode(message);
 
-      // Dodajemy wiadomość do kolejki
-      _messageQueue.add(data);
+      if (data['type'] == 'new_media') {
+        _messageQueue.add(data);
+      }
     });
 
     // client.onMessage((message) async {
@@ -367,19 +367,21 @@ class _TripInterfaceState extends State<TripInterface> {
     client.connect().then((_) {
       print('Connected to WebSocket server as participant.');
 
-      final syncMessage = jsonEncode({
-        'trip_id': tripId,
-        "type": "sync_media",
-        "last_id": lastReceivedId,
+      timer_sync = Timer.periodic(Duration(seconds: 60), (timer) {
+        final syncMessage = jsonEncode({
+          'trip_id': tripId,
+          "type": "sync_media",
+          "last_id": lastReceivedId,
+        });
+        client.sendMessage(syncMessage);
       });
-      client.sendMessage(syncMessage);
     });
 
     monitorConnectivity(client);
 
     client.onMessage((message) async {
+      print("Received message: $message");
       final data = jsonDecode(message);
-
       // if (data['type'] == 'route_update') {
       //   // Aktualizacja trasy
       //   final routeCoordinates = (data['routeCoordinates'] as List)
@@ -404,37 +406,38 @@ class _TripInterfaceState extends State<TripInterface> {
       }
 
       if (data['type'] == 'new_media') {
-        final receivedId = data['id'];
-        final filePath = data['filePath'];
-        final markerLat = data['lat'];
-        final markerLong = data['long'];
-
-        if (!receivedIds.contains(receivedId)) {
-          receivedIds.add(receivedId);
-          lastReceivedId = receivedId;
-
-          try {
-            final uri = Uri.parse("http://156.17.237.165:55000$filePath");
-            final response = await http.get(uri);
-
-            if (response.statusCode == 200) {
-              final directory = await getTemporaryDirectory();
-              final fileName = uri.pathSegments.last;
-              final localPath = "${directory.path}/$fileName";
-
-              final file = File(localPath);
-              await file.writeAsBytes(response.bodyBytes);
-              _addMarker(localPath, LatLng(double.parse(markerLat), double.parse(markerLong)));
-            } else {
-              print("Failed to download media: ${response.statusCode}");
-              return null;
-            }
-          } catch (e) {
-            print("Error downloading media: $e");
-            return null;
-          }
-        }
-        saveState();
+        _messageQueue.add(data);
+        // final receivedId = data['id'];
+        // final filePath = data['filePath'];
+        // final markerLat = data['lat'];
+        // final markerLong = data['long'];
+        //
+        // if (!receivedIds.contains(receivedId)) {
+        //   receivedIds.add(receivedId);
+        //   lastReceivedId = receivedId;
+        //
+        //   try {
+        //     final uri = Uri.parse("http://156.17.237.132:55000$filePath");
+        //     final response = await http.get(uri);
+        //
+        //     if (response.statusCode == 200) {
+        //       final directory = await getTemporaryDirectory();
+        //       final fileName = uri.pathSegments.last;
+        //       final localPath = "${directory.path}/$fileName";
+        //
+        //       final file = File(localPath);
+        //       await file.writeAsBytes(response.bodyBytes);
+        //       _addMarker(localPath, LatLng(double.parse(markerLat), double.parse(markerLong)));
+        //     } else {
+        //       print("Failed to download media: ${response.statusCode}");
+        //       return null;
+        //     }
+        //   } catch (e) {
+        //     print("Error downloading media: $e");
+        //     return null;
+        //   }
+        // }
+        // saveState();
       }
     });
   }
@@ -457,7 +460,8 @@ class _TripInterfaceState extends State<TripInterface> {
     AppViewModel appViewModel =
     Provider.of<AppViewModel>(context, listen: false);
     client.disconnect();
-    timer?.cancel();
+    timer_sync?.cancel();
+    timer_leader?.cancel();
     setState(() {
       isTripNotStarted = true;
       routeCoordinates = [];
@@ -472,8 +476,23 @@ class _TripInterfaceState extends State<TripInterface> {
       _isStartingTrip = false;
     });
     appViewModel.clearFinishTripCallback();
+    await cleanOldFiles(Duration(days: 2));
     await saveState();
     context.go("/home");
+  }
+
+  Future<void> cleanOldFiles(Duration maxAge) async {
+    final directory = await getApplicationDocumentsDirectory();
+    final now = DateTime.now();
+
+    for (var file in directory.listSync()) {
+      if (file is File) {
+        final lastModified = await file.lastModified();
+        if (now.difference(lastModified) > maxAge) {
+          await file.delete();
+        }
+      }
+    }
   }
 
   void monitorConnectivity(WebSocketClient websocketClient) {
@@ -591,8 +610,20 @@ class _TripInterfaceState extends State<TripInterface> {
       final uri = Uri.parse('http://156.17.237.165:55000/upload_media/');
       final request = http.MultipartRequest('POST', uri);
 
+      final File file = File(filePath);
+      final size = await file.length();
+      print("wielkosc pliku: $size");
+
+      Uint8List? compressedImage = await TripService().compressImage(file);
+      String compressedFilePath = '${file.path}_compressed.jpg';
+      File compressedFile = File(compressedFilePath);
+      await compressedFile.writeAsBytes(compressedImage as List<int>);
+      final size2 = await compressedFile.length();
+
+      print("wielkosc teraz: $size2");
       // Dodaj plik do żądania
-      request.files.add(await http.MultipartFile.fromPath('file', filePath));
+      request.files.add(await http.MultipartFile.fromPath('file', compressedFilePath));
+
       request.fields['lat'] = latitude;
       request.fields['long'] = longitude;
       request.fields['trip_uuid'] = tripId;
@@ -915,7 +946,7 @@ class _TripInterfaceState extends State<TripInterface> {
                     ),
                     MarkerLayer(
                       markers: [
-                        if (leaderLat.isNotEmpty && leaderLong.isNotEmpty)
+                        if (leaderLat.isNotEmpty && leaderLong.isNotEmpty && !isLeader)
                           Marker(
                             width: 25.0,
                             height: 25.0,
@@ -923,7 +954,7 @@ class _TripInterfaceState extends State<TripInterface> {
                                 leaderLong)),
                             child: Icon(
                               Icons.circle,
-                              color: Colors.yellow,
+                              color: Colors.blueGrey,
                               size: 20,
                             ),
                           ),
@@ -934,7 +965,7 @@ class _TripInterfaceState extends State<TripInterface> {
                             point: LatLng(double.parse(lat), double.parse(long)),
                             child: Icon(
                               Icons.circle,
-                              color: Colors.blueGrey,
+                              color: Colors.yellow,
                               size: 20,
                             ),
                           ),

@@ -8,6 +8,7 @@ import 'package:social_tripper_mobile/Components/Shared/authorization_logo_heade
 import 'package:social_tripper_mobile/Models/Post/post_master_model.dart';
 import 'package:social_tripper_mobile/Models/Trip/trip_master.dart';
 import 'package:social_tripper_mobile/Pages/Authorization/complete_account_information_page.dart';
+import 'package:social_tripper_mobile/Pages/explore_page.dart';
 import 'package:social_tripper_mobile/Pages/home_page.dart';
 import 'package:social_tripper_mobile/Pages/post_comments_page.dart';
 import 'package:social_tripper_mobile/Pages/Relation/relations_page.dart';
@@ -149,7 +150,7 @@ final GoRouter router = GoRouter(
           GoRoute(
             path: '/explore',
             builder: (context, state) => Container(
-              child: Text("explore!"),
+              child: ExplorePage()
             ),
           )
         ]),
@@ -252,7 +253,8 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           theme: AppThemeData(),
           routerConfig: router,
-          builder: Authenticator.builder()),
+          builder: Authenticator.builder()
+      ),
     );
   }
 

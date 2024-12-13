@@ -482,7 +482,7 @@ class _CompleteAccountInformationPageState
                   );
                   try {
                     await UserService().createUser(userDTO, _profilePicture);
-                    await AccountService().getCurrentAccount();
+                    await AccountService().getCurrentAccount(_email);
                     context.go("/home");
                   } catch (e) {
                     print("error creating user: $e");

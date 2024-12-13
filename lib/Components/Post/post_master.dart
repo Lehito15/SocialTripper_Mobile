@@ -183,7 +183,7 @@ class _PostMasterState extends State<PostMaster> {
               Padding(
                 padding: const EdgeInsets.only(left: 9, right: 9),
                 child: PostMasterBottom(
-                  widget.model.account.profilePictureUrl,
+                  AccountService.currentAccount != null ? AccountService.currentAccount!.profilePictureUrl : widget.model.account.profilePictureUrl,
                   _toggleComment,
                 ),
               ),

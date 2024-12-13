@@ -20,13 +20,16 @@ import '../Pages/config/data_retrieving_config.dart';
 
 class AccountService {
   final baseUrl = "${DataRetrievingConfig.sourceUrl}/accounts";
-
+  static String? email;
+  static Account? currentAccount;
 
   Future<AccountThumbnail> getMyAccount() async {
     try {
-      final userAttributes = await Amplify.Auth.fetchUserAttributes();
-      final email = userAttributes[0].value;
-      final url = "$baseUrl/email?email=$email";
+      if (AccountService.email == null) {
+        final userAttributes = await Amplify.Auth.fetchUserAttributes();
+        AccountService.email = userAttributes[0].value;
+      }
+      final url = "$baseUrl/email?email=${AccountService.email}";
       var client = http.Client();
       var response = await client.get(Uri.parse(url));
 
@@ -45,12 +48,9 @@ class AccountService {
   }
 
 
-  Future<Account> getCurrentAccount() async {
+  Future<Account> getCurrentAccount(String email) async {
     try {
       // Pobierz atrybuty użytkownika (np. email)
-      final userAttributes = await Amplify.Auth.fetchUserAttributes();
-      final email = userAttributes[0]
-          .value; // Zakładamy, że email jest na pierwszej pozycji
       final url = "$baseUrl/email?email=$email";
       var client = http.Client();
       var response = await client.get(Uri.parse(url));
