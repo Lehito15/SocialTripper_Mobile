@@ -76,8 +76,6 @@ class RelationService {
       eventUUID: points.eventUUID,
       pathPoints: pathPointsDTO,
     );
-
-    print(points);
     // Wysyłamy dane do API
     final url = Uri.parse('$baseUrl/events/path-points'); // Zmień na odpowiednią URL
     final response = await http.post(

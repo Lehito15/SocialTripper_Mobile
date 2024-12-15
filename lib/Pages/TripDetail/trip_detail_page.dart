@@ -381,7 +381,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
                         UserTripRequest request =
                             UserTripRequest(userUUID!, _trip.uuid, "bye");
                         await TripService().userLeaveEvent(request);
-                        print("leaving");
                         setState(() {
                           isMember = false;
                           members = TripService().getEventMembers(_trip.uuid);
@@ -555,7 +554,6 @@ class _TripDetailPageState extends State<TripDetailPage> {
   }
 
   void _finishTripCallback() {
-    print("doing finish trip callback!");
     setState(() {
       _trip.eventStatus = TripStatus("finished");
     });

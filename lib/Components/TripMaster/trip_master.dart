@@ -33,21 +33,18 @@ class _TripMasterViewState extends State<TripMasterView> {
   }
 
   void onRemoveFromTrip() {
-    print("on remove");
     setState(() {
       trip.numberOfParticipants--;
     });
   }
 
   void onAcceptToTrip() {
-    print("on remove");
     setState(() {
       trip.numberOfParticipants++;
     });
   }
 
   void onLeaveTrip() {
-    print("on leave");
     setState(() {
       trip.numberOfParticipants--;
       trip.isMember = false;

@@ -168,8 +168,7 @@ class PostService {
 
     try {
       var response = await client.get(Uri.parse('$baseUrl/posts'));
-      if (response.statusCode == 200) {
-        print("got response");
+      if (response.statusCode == 200) {;
         var decodedResponse = jsonDecode(utf8.decode(response.bodyBytes));
 
         if (decodedResponse is List) {

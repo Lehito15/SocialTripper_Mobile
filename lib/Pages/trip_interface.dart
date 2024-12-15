@@ -44,6 +44,7 @@ class TripInterface extends StatefulWidget {
   State<TripInterface> createState() => _TripInterfaceState();
 }
 // 156.17.237.165
+// 156.17.237.164
 // 156.17.237.132
 class _TripInterfaceState extends State<TripInterface> {
   // @override
@@ -51,8 +52,8 @@ class _TripInterfaceState extends State<TripInterface> {
   late bool isLeader;
   late String tripId;
 
-  final String serverAddress = 'ws://156.17.237.165:50000';
-  final WebSocketClient client = WebSocketClient('ws://156.17.237.165:50000');
+  final String serverAddress = 'ws://156.17.237.164:50000';
+  final WebSocketClient client = WebSocketClient('ws://156.17.237.164:50000');
   String lastReceivedId = '0';
   List<String> receivedIds = [];
 
@@ -132,7 +133,6 @@ class _TripInterfaceState extends State<TripInterface> {
 
   void setupMessageHandler() {
     _messageQueue.stream.listen((message) async {
-      print("queue: $message");
       try {
         await _processMessage(message); // Procesujemy wiadomość
       } catch (e) {
@@ -155,7 +155,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
 
       try {
-        final uri = Uri.parse("http://156.17.237.165:55000$filePath");
+        final uri = Uri.parse("http://156.17.237.164:55000$filePath");
         final response = await http.get(uri);
 
         if (response.statusCode == 200) {
@@ -251,13 +251,11 @@ class _TripInterfaceState extends State<TripInterface> {
   void dispose() {
     // Anulowanie subskrypcji, gdy widget jest usuwany z drzewa
     saveState();
-    print("Disposed");
     _accelerometerSubscription?.cancel();
     super.dispose();
   }
 
   void start() {
-    print("start metrdasdad");
     setState(() {
       tripId = widget.trip.uuid;
       isLeader = widget.isOwner;
@@ -317,50 +315,6 @@ class _TripInterfaceState extends State<TripInterface> {
         _messageQueue.add(data);
       }
     });
-
-    // client.onMessage((message) async {
-    //   print(message);
-    //   final data = jsonDecode(message);
-    //   print("kkakak-5");
-    //   if (data['type'] == 'new_media') {
-    //     final receivedId = data['id'];
-    //     final filePath = data['filePath'];
-    //     final markerLat = data['lat'];
-    //     final markerLong = data['long'];
-    //     print("kkakak-4");
-    //     if (!receivedIds.contains(receivedId)) {
-    //       receivedIds.add(receivedId);
-    //       lastReceivedId = receivedId;
-    //       print("kkakak-3");
-    //       try {
-    //         final uri = Uri.parse("http://156.17.237.132:8000$filePath");
-    //         print("kkakak-2");
-    //         final response = await http.get(uri);
-    //         print("kkakak-1");
-    //         if (response.statusCode == 200) {
-    //           print("kkakak0");
-    //           final directory = await getTemporaryDirectory();
-    //           print("kkakak1");
-    //           final fileName = uri.pathSegments.last;
-    //           final localPath = "${directory.path}/$fileName";
-    //           print("kkakak2");
-    //           final file = File(localPath);
-    //           print("kkakak3");
-    //           await file.writeAsBytes(response.bodyBytes);
-    //           print("kkakak4");
-    //           _addMarker(localPath, LatLng(double.parse(markerLat), double.parse(markerLong)));
-    //         } else {
-    //           print("Failed to download media: ${response.statusCode}");
-    //           return null;
-    //         }
-    //       } catch (e) {
-    //         print("Error downloading media: $e");
-    //         return null;
-    //       }
-    //     }
-    //     saveState();
-    //   }
-    // });
   }
 
   void startAsParticipant() {
@@ -407,37 +361,6 @@ class _TripInterfaceState extends State<TripInterface> {
 
       if (data['type'] == 'new_media') {
         _messageQueue.add(data);
-        // final receivedId = data['id'];
-        // final filePath = data['filePath'];
-        // final markerLat = data['lat'];
-        // final markerLong = data['long'];
-        //
-        // if (!receivedIds.contains(receivedId)) {
-        //   receivedIds.add(receivedId);
-        //   lastReceivedId = receivedId;
-        //
-        //   try {
-        //     final uri = Uri.parse("http://156.17.237.132:55000$filePath");
-        //     final response = await http.get(uri);
-        //
-        //     if (response.statusCode == 200) {
-        //       final directory = await getTemporaryDirectory();
-        //       final fileName = uri.pathSegments.last;
-        //       final localPath = "${directory.path}/$fileName";
-        //
-        //       final file = File(localPath);
-        //       await file.writeAsBytes(response.bodyBytes);
-        //       _addMarker(localPath, LatLng(double.parse(markerLat), double.parse(markerLong)));
-        //     } else {
-        //       print("Failed to download media: ${response.statusCode}");
-        //       return null;
-        //     }
-        //   } catch (e) {
-        //     print("Error downloading media: $e");
-        //     return null;
-        //   }
-        // }
-        // saveState();
       }
     });
   }
@@ -538,7 +461,6 @@ class _TripInterfaceState extends State<TripInterface> {
         }
       });
     }
-    // print(velocity);
   }
 
   void _incrementCounter() {
@@ -607,7 +529,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
   Future<void> uploadMedia(String filePath, String latitude, String longitude) async {
     try {
-      final uri = Uri.parse('http://156.17.237.165:55000/upload_media/');
+      final uri = Uri.parse('http://156.17.237.164:55000/upload_media/');
       final request = http.MultipartRequest('POST', uri);
 
       final File file = File(filePath);

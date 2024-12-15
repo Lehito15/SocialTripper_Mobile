@@ -26,7 +26,6 @@ class AppViewModel extends ChangeNotifier {
 
 
   void setFinishTripCallback(void Function() callback) {
-    print("setting setFinishTripCallback");
     finishTripCallback = callback;
   }
 
