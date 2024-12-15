@@ -52,7 +52,7 @@ class _TripInterfaceState extends State<TripInterface> {
   late bool isLeader;
   late String tripId;
 
-  final String serverAddress = 'ws://156.17.237.164:50000';
+  final String fileServerAddress = "http://156.17.237.164:55000";
   final WebSocketClient client = WebSocketClient('ws://156.17.237.164:50000');
   String lastReceivedId = '0';
   List<String> receivedIds = [];
@@ -155,7 +155,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
 
       try {
-        final uri = Uri.parse("http://156.17.237.164:55000$filePath");
+        final uri = Uri.parse("$fileServerAddress$filePath");
         final response = await http.get(uri);
 
         if (response.statusCode == 200) {
@@ -529,7 +529,7 @@ class _TripInterfaceState extends State<TripInterface> {
 
   Future<void> uploadMedia(String filePath, String latitude, String longitude) async {
     try {
-      final uri = Uri.parse('http://156.17.237.164:55000/upload_media/');
+      final uri = Uri.parse('$fileServerAddress/upload_media/');
       final request = http.MultipartRequest('POST', uri);
 
       final File file = File(filePath);
